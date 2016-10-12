@@ -14,7 +14,7 @@
 namespace mapmqp {
     class Vector3D {
     public:
-        Vector3D(double x, double y, double z, bool unitVector = false);
+        Vector3D(double x = 0, double y = 0, double z = 0, bool unitVector = false);
         Vector3D(Angle theta, Angle phi, double magntiude = 1);
         
         //getters
@@ -31,7 +31,6 @@ namespace mapmqp {
         void z(double z);
         void theta(Angle theta);
         void phi(Angle phi);
-        
         void normalize(double magnitude = 1);
         
         static double dotProduct(Vector3D v1, Vector3D v2);

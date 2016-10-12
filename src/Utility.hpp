@@ -13,12 +13,17 @@
 
 #define PRINT_LOGS_TO_CONSOLE
 
+//hardware variables
+
 #define THETA_MAX 2.35619449019 //in radians (should be between 0-pi)
 
 #define A_AXIS_RANGE 1800
 #define B_AXIS_RANGE 3600
 
-//needed for writeLog
+#define SLICE_THICKNESS 1
+
+//end hardware variables
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string>

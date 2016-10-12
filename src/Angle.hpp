@@ -12,7 +12,7 @@
 namespace mapmqp {
     class Angle {
     public:
-        Angle(double val);
+        Angle(double val = 0);
         
         //getters
         double val() const; //will be in range of [0, 2pi)
