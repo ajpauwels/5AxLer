@@ -12,7 +12,7 @@
 #include "Utility.hpp"
 #include "Vector3D.hpp"
 #include "Angle.hpp"
-#include "libs/clipper.hpp"
+#include "libs/clipper/clipper.hpp"
 
 namespace mapmqp {
     class BuildMap {

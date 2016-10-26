@@ -48,6 +48,7 @@ int main(int argc, const char * argv[]) {
     printf("random surface data generated: %ldms\n", timer.delta());
     
     mapmqp::BuildMap map(faceNormals, faceAreas, n);
+    map.solve();
     
     printf("build map constructed: %ldms\n", timer.delta());
     

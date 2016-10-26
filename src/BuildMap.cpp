@@ -20,9 +20,7 @@ using namespace ClipperLib;
 BuildMap::BuildMap(Vector3D faceNormals[], double faceAreas[], int faceCount) :
 faceNormals_(faceNormals),
 faceAreas_(faceAreas),
-faceCount_(faceCount) {
-    solve(); //TODO should this be automatically called?
-}
+faceCount_(faceCount) { }
 
 bool BuildMap::solve() {
     if (!solved_) {
@@ -80,7 +78,10 @@ bool BuildMap::solve() {
             Clipper holeClipper;
             holeClipper.AddPaths(holes, ptSubject, true);
             holeClipper.AddPath(hole, ptClip, true);
-            holeClipper.Execute(ctUnion, holes, pftNonZero, pftNonZero);
+            if (!holeClipper.Execute(ctUnion, holes, pftNonZero, pftNonZero)) {
+                writeLog(ERROR_MESSAGE, "BUILD MAP - error taking union of holes");
+                return false;
+            }
             //SimplifyPolygons(holes_); //I don't think this is necessary and takes extra time but not sure
         }
         
@@ -90,15 +91,21 @@ bool BuildMap::solve() {
         subject << IntPoint(0, 0) << IntPoint(0, A_AXIS_RANGE) << IntPoint(B_AXIS_RANGE, A_AXIS_RANGE) << IntPoint(B_AXIS_RANGE, 0);
         buildMapClipper.AddPath(subject, ptSubject, true);
         buildMapClipper.AddPaths(holes, ptClip, true);
-        buildMapClipper.Execute(ctDifference, buildMap2D_, pftNonZero, pftNonZero);
+        if (!buildMapClipper.Execute(ctDifference, buildMap2D_, pftNonZero, pftNonZero)) {
+            writeLog(ERROR_MESSAGE, "BUILD MAP - error taking difference of map and holes");
+            return false;
+        }
         solved_ = true;
     }
     
-    return solved_;
+    return true;
 }
 
 double BuildMap::area() {
-    solve();
+    if (!solved_) {
+        writeLog(WARNING_MESSAGE, "BUILD MAP - taking area of unsolved build map");
+        return 0;
+    }
     
     if (buildMap2D_.size() == 0) {
         return 0;
@@ -112,7 +119,10 @@ double BuildMap::area() {
 }
 
 bool BuildMap::checkVector(Vector3D v, bool includeEdges) {
-    solve();
+    if (!solved_) {
+        writeLog(WARNING_MESSAGE, "BUILD MAP - checking vector of unsolved build map");
+        return false;
+    }
     
     if (area() == 0) { //build map is empty
         return false;
@@ -163,7 +173,10 @@ Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, i
 }
 
 Vector3D BuildMap::findValidVector() {
-    solve();
+    if (!solved_) {
+        writeLog(WARNING_MESSAGE, "BUILD MAP - finding valid vector of unsolved build map");
+        return Vector3D(0, 0, 0);
+    }
     
     if (area() == 0) {
         return Vector3D(0, 0, 0);
@@ -199,14 +212,17 @@ Vector3D BuildMap::findBestVectorRecursive(int x, int y, int dx, int dy, double 
     } else if (maxHeuristic == south) {
         return findBestVectorRecursive((x - newDx) % B_AXIS_RANGE, y, newDx, newDy, south);
     } else if (maxHeuristic == east) {
-        return findBestVectorRecursive(x, (y + dy) % A_AXIS_RANGE, newDx, newDy, east);
+        return findBestVectorRecursive(x, (y + newDy) % A_AXIS_RANGE, newDx, newDy, east);
     } else { //if (maxHeuristic == west)
-        return findBestVectorRecursive(x, (y + dy) % A_AXIS_RANGE, newDx, newDy, west);
+        return findBestVectorRecursive(x, (y + newDy) % A_AXIS_RANGE, newDx, newDy, west);
     }
 }
 
 Vector3D BuildMap::findBestVector() {
-    solve();
+    if (!solved_) {
+        writeLog(WARNING_MESSAGE, "BUILD MAP - finding best vector of unsolved build map");
+        return Vector3D(0, 0, 0);
+    }
     
     Vector3D v = findValidVector();
     double heuristic = weighVector(v);
@@ -215,7 +231,10 @@ Vector3D BuildMap::findBestVector() {
 }
 
 double BuildMap::weighVector(Vector3D v) {
-    solve();
+    if (!solved_) {
+        writeLog(WARNING_MESSAGE, "BUILD MAP - weighing vector of unsolved build map");
+        return INFINITY;
+    }
     
     if (!checkVector(v)) {
         return INFINITY;
@@ -227,9 +246,9 @@ double BuildMap::weighVector(Vector3D v) {
     //double totalFaceArea;
     for (int i = 0; i < faceCount_; i++) {
 #ifdef DEBUG_MODE
-        if (Vector3D::dotProduct(v, faceNormals_[i]) > cos(THETA_MAX)) {
-            //writeLog(ERROR_MESSAGE, "BUILD MAP - dotProduct(v, faceNormals[%d]) > cos(THETA_MAX)", i);
-        }
+        //if (Vector3D::dotProduct(v, faceNormals_[i]) > cos(THETA_MAX)) {
+            //TODO writeLog(ERROR_MESSAGE, "BUILD MAP - dotProduct(v, faceNormals[%d]) > cos(THETA_MAX)", i);
+        //}
 #endif
         weight += Vector3D::dotProduct(v, faceNormals_[i]) * faceAreas_[i];
         //totalFaceArea += faceAreas_[i];
