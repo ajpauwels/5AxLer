@@ -10,8 +10,8 @@
 #include <stdlib.h>
 
 #include "BuildMap.hpp"
-#include <cmath>
 #include "Clock.hpp"
+#include <cmath>
 
 int main(int argc, const char * argv[]) {
     // insert code here...

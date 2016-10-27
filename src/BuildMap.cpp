@@ -15,7 +15,6 @@
 
 using namespace mapmqp;
 using namespace std;
-using namespace ClipperLib;
 
 BuildMap::BuildMap(Vector3D faceNormals[], double faceAreas[], int faceCount) :
 faceNormals_(faceNormals),
@@ -58,7 +57,7 @@ bool BuildMap::solve() {
         //end static section
         
         //remove all contraints from face normals
-        Paths holes;
+        ClipperLib::Paths holes;
         for (int i = 0; i < faceCount_; i++) {
             Vector3D v = faceNormals_[i];
             
@@ -69,29 +68,29 @@ bool BuildMap::solve() {
             int xCenter = thetaToBAxisRange(v.theta());
             int yCenter = phiToAAxisRange(v.phi());
             
-            Path hole;
+            ClipperLib::Path hole;
             for (vector<pair<int, int>>::iterator it = ellipseCoors.begin(); it < ellipseCoors.end(); it++) {
-                hole << IntPoint(fmin(B_AXIS_RANGE, fmax(0, it->first + xCenter)), fmin(A_AXIS_RANGE, fmax(0, it->second + yCenter)));
+                hole << ClipperLib::IntPoint(fmin(B_AXIS_RANGE, fmax(0, it->first + xCenter)), fmin(A_AXIS_RANGE, fmax(0, it->second + yCenter)));
             }
             
             //union all holes into one polygon
-            Clipper holeClipper;
-            holeClipper.AddPaths(holes, ptSubject, true);
-            holeClipper.AddPath(hole, ptClip, true);
-            if (!holeClipper.Execute(ctUnion, holes, pftNonZero, pftNonZero)) {
+            ClipperLib::Clipper holeClipper;
+            holeClipper.AddPaths(holes, ClipperLib::ptSubject, true);
+            holeClipper.AddPath(hole, ClipperLib::ptClip, true);
+            if (!holeClipper.Execute(ClipperLib::ctUnion, holes, ClipperLib::pftNonZero, ClipperLib::pftNonZero)) {
                 writeLog(ERROR_MESSAGE, "BUILD MAP - error taking union of holes");
                 return false;
             }
             //SimplifyPolygons(holes_); //I don't think this is necessary and takes extra time but not sure
         }
         
-        Clipper buildMapClipper;
+        ClipperLib::Clipper::Clipper buildMapClipper;
         //set up subject (only look in this box)
-        Path subject;
-        subject << IntPoint(0, 0) << IntPoint(0, A_AXIS_RANGE) << IntPoint(B_AXIS_RANGE, A_AXIS_RANGE) << IntPoint(B_AXIS_RANGE, 0);
-        buildMapClipper.AddPath(subject, ptSubject, true);
-        buildMapClipper.AddPaths(holes, ptClip, true);
-        if (!buildMapClipper.Execute(ctDifference, buildMap2D_, pftNonZero, pftNonZero)) {
+        ClipperLib::Path subject;
+        subject << ClipperLib::IntPoint(0, 0) << ClipperLib::IntPoint(0, A_AXIS_RANGE) << ClipperLib::IntPoint(B_AXIS_RANGE, A_AXIS_RANGE) << ClipperLib::IntPoint(B_AXIS_RANGE, 0);
+        buildMapClipper.AddPath(subject, ClipperLib::ptSubject, true);
+        buildMapClipper.AddPaths(holes, ClipperLib::ptClip, true);
+        if (!buildMapClipper.Execute(ClipperLib::ctDifference, buildMap2D_, ClipperLib::pftNonZero, ClipperLib::pftNonZero)) {
             writeLog(ERROR_MESSAGE, "BUILD MAP - error taking difference of map and holes");
             return false;
         }
@@ -129,7 +128,7 @@ bool BuildMap::checkVector(Vector3D v, bool includeEdges) {
     }
     
     //will return 0 if false, -1 if on edge, 1 otherwise
-    int pointIn = PointInPolygon(IntPoint(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi())), buildMap2D_[0]);
+    int pointIn = PointInPolygon(ClipperLib::IntPoint(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi())), buildMap2D_[0]);
     return (includeEdges ? (pointIn != 0) : (pointIn == 1));
 }
 
@@ -141,19 +140,19 @@ Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, i
         return Vector3D(BuildMap::bAxisValToTheta(xStart), BuildMap::aAxisValToPhi(yStart));
     }
     
-    Clipper searchClipper;
-    searchClipper.AddPaths(buildMap2D_, ptSubject, true);
+    ClipperLib::Clipper searchClipper;
+    searchClipper.AddPaths(buildMap2D_, ClipperLib::ptSubject, true);
     
     bool cutHorizontally = width < height;
     int dx = (cutHorizontally ? width : ceil(static_cast<double>(width) / 2.0));
     int dy = (cutHorizontally ? ceil(static_cast<double>(height) / 2.0) : height);
     
-    Path search;
-    search << IntPoint(xStart, yStart) << IntPoint(xStart, yStart + dy) << IntPoint(xStart + dx, yStart + dy) << IntPoint(xStart + dx, yStart);
-    searchClipper.AddPath(search, ptClip, true);
+    ClipperLib::Path search;
+    search << ClipperLib::IntPoint(xStart, yStart) << ClipperLib::IntPoint(xStart, yStart + dy) << ClipperLib::IntPoint(xStart + dx, yStart + dy) << ClipperLib::IntPoint(xStart + dx, yStart);
+    searchClipper.AddPath(search, ClipperLib::ptClip, true);
     
-    Paths solution;
-    searchClipper.Execute(ctIntersection, solution, pftNonZero, pftNonZero);
+    ClipperLib::Paths solution;
+    searchClipper.Execute(ClipperLib::ctIntersection, solution, ClipperLib::pftNonZero, ClipperLib::pftNonZero);
     
     bool searchSuccess;
     if (solution.size() != 0) {
