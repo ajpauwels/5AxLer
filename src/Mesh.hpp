@@ -72,6 +72,14 @@ namespace mapmqp {
         std::shared_ptr<MeshFace> face23();
         std::shared_ptr<MeshFace> face31();
         
+        //returns whether or not the face intersections with a plane with a normal of planeNormal and contains the coordinate pointOnPoint
+        bool intersectsPlane(Vector3D planeNormal, Vector3D pointOnPlane);
+        
+        //returns whether or not the entire face lays is on a plane with a normal of planeNormal and contains the coordinate pointOnPoint (that is, all vertices of face lie on the plane)
+        bool liesOnPlane(Vector3D planeNormal, Vector3D pointOnPlane);
+        //if the face intersections with a plane with a normal of planeNormal and contains the coordinate pointOnPoint and does not lie entirely on the plane, returns the line of intersection between the face and the plane
+        std::pair<Vector3D, Vector3D> planeIntersection(Vector3D planeNormal, Vector3D pointOnPlane);
+        
     private:
         //x, y, z vertices in counter-clockwise order
         std::shared_ptr<MeshVertex> v1_ = nullptr, v2_ = nullptr, v3_ = nullptr;

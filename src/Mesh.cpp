@@ -176,3 +176,17 @@ shared_ptr<MeshFace> MeshFace::face31() {
     return face31_;
 }
 
+bool MeshFace::intersectsPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
+    //TODO by checking if one vertex lies of a different side of the plane than the other two (or any point lies on the plane)
+    return false;
+}
+
+bool MeshFace::liesOnPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
+    //TODO by checking whether or not every vertex lies on the plane
+    return false;
+}
+
+pair<Vector3D, Vector3D> MeshFace::planeIntersection(Vector3D planeNormal, Vector3D pointOnPlane) {
+    //TODO by finding which point (A) lies on different side than other points (B and C), and finding intersections of lines containing A-B and A-C
+    return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
+}
