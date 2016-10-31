@@ -177,16 +177,93 @@ shared_ptr<MeshFace> MeshFace::face31() {
 }
 
 bool MeshFace::intersectsPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
-    //TODO by checking if one vertex lies of a different side of the plane than the other two (or any point lies on the plane)
-    return false;
+    double v1Val = Vector3D::dotProduct(planeNormal, v1_->vertex() - pointOnPlane);
+    double v2Val = Vector3D::dotProduct(planeNormal, v2_->vertex() - pointOnPlane);
+    double v3Val = Vector3D::dotProduct(planeNormal, v3_->vertex() - pointOnPlane);
+    
+    if ((v1Val == 0) || (v2Val == 0) || (v3Val == 0)) { //if any point lies exactly on plane, face intersects
+        return true;
+    } else if ((v1Val < 0) && (v2Val < 0) && (v3Val < 0)) { //if all points lie below plane, face does not intersect
+        return false;
+    } else if ((v1Val < 0) && (v2Val < 0) && (v3Val < 0)) { //if all points lie above plane, face does not intersect
+        return false;
+    } else { //any other possibility means face intersects
+        return true;
+    }
 }
 
 bool MeshFace::liesOnPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
-    //TODO by checking whether or not every vertex lies on the plane
-    return false;
+    double v1Val = Vector3D::dotProduct(planeNormal, v1_->vertex() - pointOnPlane);
+    double v2Val = Vector3D::dotProduct(planeNormal, v2_->vertex() - pointOnPlane);
+    double v3Val = Vector3D::dotProduct(planeNormal, v3_->vertex() - pointOnPlane);
+    
+    if ((v1Val == 0) && (v2Val == 0) && (v3Val == 0)) { //if every point lies exactly on plane
+        return true;
+    } else {
+        return false;
+    }
 }
 
 pair<Vector3D, Vector3D> MeshFace::planeIntersection(Vector3D planeNormal, Vector3D pointOnPlane) {
     //TODO by finding which point (A) lies on different side than other points (B and C), and finding intersections of lines containing A-B and A-C
-    return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
+    if (intersectsPlane(planeNormal, pointOnPlane)) {
+        writeLog(WARNING_MESSAGE, "attempted to find intersection line of MeshFace with plane that does not intersect");
+        return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
+    } else if (liesOnPlane(planeNormal, pointOnPlane)) {
+        writeLog(WARNING_MESSAGE, "attempted to find intersection line of MeshFace with plane that is parallel to face");
+        return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
+    }
+    
+    double v1Val = Vector3D::dotProduct(planeNormal, v1_->vertex() - pointOnPlane);
+    double v2Val = Vector3D::dotProduct(planeNormal, v2_->vertex() - pointOnPlane);
+    double v3Val = Vector3D::dotProduct(planeNormal, v3_->vertex() - pointOnPlane);
+    
+    //if two vertices lie of plane, return edge between vertices
+    //TODO determine which order vertices should be placed in pair
+    if ((v1Val == 0) && (v2Val == 0)) {
+        return pair<Vector3D, Vector3D>(v1_->vertex(), v2_->vertex());
+    } else if ((v1Val == 0) && (v3Val == 0)) {
+        return pair<Vector3D, Vector3D>(v1_->vertex(), v3_->vertex());
+    } else if ((v2Val == 0) && (v3Val == 0)) {
+        return pair<Vector3D, Vector3D>(v2_->vertex(), v3_->vertex());
+    }
+    
+    //using method described in stackoverflow post: http://math.stackexchange.com/questions/100439/determine-where-a-vector-will-intersect-a-plane
+    
+    Vector3D p0, p1, p2; //p0 is on opposite side of plane as p1 and p2
+    //set p0 to whichever vertex is on opposite side as other vertices
+    if (((v1Val <= 0) && (v2Val > 0) && (v3Val > 0)) || ((v1Val >= 0) && (v2Val < 0) && (v3Val < 0))) { //v1 is on side by itself
+        p0 = v1_->vertex();
+        p1 = v2_->vertex();
+        p2 = v3_->vertex();
+    } else if (((v2Val <= 0) && (v1Val > 0) && (v3Val > 0)) || ((v2Val >= 0) && (v1Val < 0) && (v3Val < 0))) { //v2 is on side by itself
+        p0 = v2_->vertex();
+        p1 = v1_->vertex();
+        p2 = v3_->vertex();
+    } else if (((v3Val <= 0) && (v1Val > 0) && (v2Val > 0)) || ((v3Val >= 0) && (v1Val < 0) && (v2Val < 0))) { //v3 is on side by itself
+        p0 = v3_->vertex();
+        p1 = v1_->vertex();
+        p2 = v2_->vertex();
+    }
+    
+    Vector3D p01 = p1 - p0;
+    Vector3D p02 = p2 - p0;
+    
+    double t1 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p01);
+    double t2 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p02);
+    
+    //error checking
+    if (t1 > p01.magnitude()) {
+        writeLog(ERROR_MESSAGE, "first intersection point of MeshFace edge and plane is not contained in edge");
+    }
+    if (t2 > p01.magnitude()) {
+        writeLog(ERROR_MESSAGE, "second intersection point of MeshFace edge and plane is not contained in edge");
+    }
+    
+    //set intersection points to edge vectors with length of t1/t2
+    Vector3D intersect1 = p01, intersect2 = p02;
+    intersect1.normalize(t1);
+    intersect2.normalize(t2);
+    
+    return pair<Vector3D, Vector3D>(intersect1, intersect2);
 }
