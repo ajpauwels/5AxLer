@@ -12,11 +12,15 @@
 #include "BuildMap.hpp"
 #include "Clock.hpp"
 #include <cmath>
+#include <unordered_map>
+#include <string>
 
 int main(int argc, const char * argv[]) {
     // insert code here...
     printf("Hello, World!\n");
     
+    /*
+    //testing build map
     srand(16);
     mapmqp::Clock timer;
     
@@ -67,6 +71,7 @@ int main(int argc, const char * argv[]) {
     //TODO check to make sure this value is correct
     mapmqp::Vector3D bestVector = map.findBestVector();
     printf("best vector(theta:%f, phi:%f)\n", bestVector.theta().val(), bestVector.phi().val());
-    
+    */
+     
     return 0;
 }

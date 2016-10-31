@@ -38,7 +38,7 @@ bool BuildMap::solve() {
             writeLog(INFO_MESSAGE, "BUILD MAP - ellipse area: %f", M_PI * deltaTheta * deltaPhi);
             
             //polygon goes in clockwise form
-            for (int i = 0; i < ELLIPSE_PRECISION; i++) {
+            for (unsigned int i = 0; i < ELLIPSE_PRECISION; i++) {
                 double angle = 2.0 * M_PI * static_cast<double>(i) / static_cast<double>(ELLIPSE_PRECISION);
                 
                 //TODO this underapproximates ellipse, it should overapproximate to guarantee no false-negatives
@@ -58,7 +58,7 @@ bool BuildMap::solve() {
         
         //remove all contraints from face normals
         ClipperLib::Paths holes;
-        for (int i = 0; i < faceCount_; i++) {
+        for (unsigned int i = 0; i < faceCount_; i++) {
             Vector3D v = faceNormals_[i];
             
 //#ifdef DEBUG_MODE
@@ -81,6 +81,9 @@ bool BuildMap::solve() {
                 writeLog(ERROR_MESSAGE, "BUILD MAP - error taking union of holes");
                 return false;
             }
+            
+            //TODO check area of holes and if it's >= total build map area then we know the build map is empty and we can stop here
+            
             //SimplifyPolygons(holes_); //I don't think this is necessary and takes extra time but not sure
         }
         
@@ -100,24 +103,25 @@ bool BuildMap::solve() {
     return true;
 }
 
-double BuildMap::area() {
+double BuildMap::area() const {
     if (!solved_) {
         writeLog(WARNING_MESSAGE, "BUILD MAP - taking area of unsolved build map");
         return 0;
     }
     
+    //check to make sure paths are not empty (meaning empty area)
     if (buildMap2D_.size() == 0) {
         return 0;
     }
     
     double area = 0;
-    for (int i = 0; i < buildMap2D_.size(); i++) {
+    for (unsigned int i = 0; i < buildMap2D_.size(); i++) {
         area += ClipperLib::Area(buildMap2D_[i]);
     }
     return area;
 }
 
-bool BuildMap::checkVector(Vector3D v, bool includeEdges) {
+bool BuildMap::checkVector(Vector3D v, bool includeEdges) const {
     if (!solved_) {
         writeLog(WARNING_MESSAGE, "BUILD MAP - checking vector of unsolved build map");
         return false;
@@ -132,7 +136,7 @@ bool BuildMap::checkVector(Vector3D v, bool includeEdges) {
     return (includeEdges ? (pointIn != 0) : (pointIn == 1));
 }
 
-Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, int height) {
+Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, int height) const {
 #ifdef DEBUG_MODE
     //writeLog(INFO_MESSAGE, "BUILD MAP - checking build map theta(%d-%d) phi(%d-%d)", xStart, xStart + width, yStart, yStart + height);
 #endif
@@ -157,7 +161,7 @@ Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, i
     bool searchSuccess;
     if (solution.size() != 0) {
         double area;
-        for (int i = 0; i < solution.size(); i++) {
+        for (unsigned int i = 0; i < solution.size(); i++) {
             area += Area(solution[i]);
         }
 #ifdef DEBUG_MODE
@@ -171,7 +175,7 @@ Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, i
     return findValidVectorRecursive(xStart + width - dx, yStart + height - dy, dx, dy);
 }
 
-Vector3D BuildMap::findValidVector() {
+Vector3D BuildMap::findValidVector() const {
     if (!solved_) {
         writeLog(WARNING_MESSAGE, "BUILD MAP - finding valid vector of unsolved build map");
         return Vector3D(0, 0, 0);
@@ -188,7 +192,7 @@ Vector3D BuildMap::findValidVector() {
     return v;
 }
 
-Vector3D BuildMap::findBestVectorRecursive(int x, int y, int dx, int dy, double heuristic) {
+Vector3D BuildMap::findBestVectorRecursive(int x, int y, int dx, int dy, double heuristic) const {
     double north = weighVector(Vector3D(bAxisValToTheta((x + dx) % B_AXIS_RANGE), aAxisValToPhi(y)));
     double south = weighVector(Vector3D(bAxisValToTheta((x - dx) % B_AXIS_RANGE), aAxisValToPhi(y)));
     double east = weighVector(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y + dy) % A_AXIS_RANGE)));
@@ -217,7 +221,7 @@ Vector3D BuildMap::findBestVectorRecursive(int x, int y, int dx, int dy, double 
     }
 }
 
-Vector3D BuildMap::findBestVector() {
+Vector3D BuildMap::findBestVector() const {
     if (!solved_) {
         writeLog(WARNING_MESSAGE, "BUILD MAP - finding best vector of unsolved build map");
         return Vector3D(0, 0, 0);
@@ -229,7 +233,7 @@ Vector3D BuildMap::findBestVector() {
     return findBestVectorRecursive(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi()), B_AXIS_RANGE / 2, A_AXIS_RANGE / 2, heuristic);
 }
 
-double BuildMap::weighVector(Vector3D v) {
+double BuildMap::weighVector(Vector3D v) const {
     if (!solved_) {
         writeLog(WARNING_MESSAGE, "BUILD MAP - weighing vector of unsolved build map");
         return INFINITY;
@@ -243,11 +247,11 @@ double BuildMap::weighVector(Vector3D v) {
     
     double weight = 0;
     //double totalFaceArea;
-    for (int i = 0; i < faceCount_; i++) {
+    for (unsigned int i = 0; i < faceCount_; i++) {
 #ifdef DEBUG_MODE
-        //if (Vector3D::dotProduct(v, faceNormals_[i]) > cos(THETA_MAX)) {
-            //TODO writeLog(ERROR_MESSAGE, "BUILD MAP - dotProduct(v, faceNormals[%d]) > cos(THETA_MAX)", i);
-        //}
+        if (Vector3D::dotProduct(v, faceNormals_[i]) > cos(THETA_MAX)) {
+            writeLog(ERROR_MESSAGE, "BUILD MAP - dotProduct(v, faceNormals[%d]) = %d > cos(THETA_MAX) = %d", i, Vector3D::dotProduct(v, faceNormals_[i]), cos(THETA_MAX));
+        }
 #endif
         weight += Vector3D::dotProduct(v, faceNormals_[i]) * faceAreas_[i];
         //totalFaceArea += faceAreas_[i];
