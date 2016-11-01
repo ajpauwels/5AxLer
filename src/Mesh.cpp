@@ -13,14 +13,17 @@
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
+#include <math.h>
 
 #include "Utility.hpp"
 
 using namespace std;
 using namespace mapmqp;
 
-//helper struct for unordered map used in parsing the STL file
-struct MeshVertexHash {
+/**
+ * Creates a hash value for a MeshVertex using the vertex's vector
+ */
+struct Vector3DHash {
     size_t operator()(const Vector3D & v) const { //TODO use sizeof(long) instead? should they be longs or ints
         long x = (long)v.x();
         long y = (long)v.y();
@@ -33,9 +36,26 @@ struct MeshVertexHash {
     }
 };
 
-struct MeshVertexEqual {
-    bool operator()(const Vector3D & v1, const Vector3D & v2) const {
-        return v1.x() == v2.x() && v1.y() == v2.y() && v1.z() == v2.z();
+/**
+ * Creates a hash value for a MeshEdge object using its vertices
+ */
+struct MeshEdgeHash {
+    size_t operator()(const MeshEdge & me) const {
+        Vector3DHash v3hasher;
+
+        int hash = 17;
+        hash = hash * 31 + v3hasher(me.getV1()->vertex());
+        hash = hash * 31 + v3hasher(me.getV2()->vertex());
+        return std::hash<int>()(hash);
+    }
+};
+
+/**
+ * Evaluates whether to MeshEdge objects are equal
+ */
+struct MeshEdgeEqual {
+    bool operator()(const MeshEdge & me1, const MeshEdge & me2) const {
+        return me1.getV1() == me2.getV1() && me1.getV2() == me2.getV2();
     }
 };
 
@@ -56,9 +76,9 @@ void Mesh::constructMeshFromSTL(string stlFilePath) {
         file.read(header, 80);							// Get the header
         file.read((char*)&size, 4);						// Get the number of triangles
         
-        unordered_map<Vector3D, shared_ptr<MeshVertex>, MeshVertexHash, MeshVertexEqual> mappedVertices;
-        
-        double lowestZVal = INFINITY; //TODO should this be an int?
+        unordered_map<Vector3D, shared_ptr<MeshVertex>, Vector3DHash> mappedVertices;
+        unordered_map<MeshEdge, shared_ptr<MeshFace>, MeshEdgeHash, MeshEdgeEqual> mappedEdges;
+        double lowestZVal = INFINITY;
         
         for (unsigned int i = 0; i < size; ++i) {		// Loop through all triangles
             Vector3D norm, vertices[3];                 // Stores the three triangle points + normal vector
@@ -78,17 +98,19 @@ void Mesh::constructMeshFromSTL(string stlFilePath) {
             shared_ptr<MeshVertex> p_meshVertices[3]; //Three MeshVertex pointers
             
             for (unsigned int i = 0; i < 3; i++) {
-                pair<unordered_map<Vector3D, shared_ptr<MeshVertex>, MeshVertexHash, MeshVertexEqual>::iterator, bool> emplacePair = mappedVertices.emplace(vertices[i], shared_ptr<MeshVertex>(new MeshVertex(vertices[i]))); //place MeshVertex ptr into hashtable
+                pair<unordered_map<Vector3D, shared_ptr<MeshVertex>, Vector3DHash>::iterator, bool> emplacePair = mappedVertices.emplace(vertices[i], shared_ptr<MeshVertex>(new MeshVertex(vertices[i]))); //place MeshVertex ptr into hashtable
                 p_meshVertices[i] = emplacePair.first->second; //set MeshVertex ptr to returned value from hashtable in case it has changed
                 if (emplacePair.second) { //if MeshVertex did not exist in hashtable, add to list of vertices
                     vertices_.push_back(p_meshVertices[i]);
                 }
                 
-                //check if any vertices are a lowest vertex
-                if (p_meshVertices[i]->vertex().z() == lowestZVal) { //vertex is a lowest vertex
+                // If the lowestVertex was never set or the current vertex is lower than the lowestVertex, replace
+                // lowestVertex with the current vertex
+                if (p_meshVertices[i]->vertex().z() == lowestZVal) {
                     lowestVertices_.push_back(p_meshVertices[i]);
-                } else if (p_meshVertices[i]->vertex().z() < lowestZVal) { //vertex is lower than other lowest vertices
-                    //reset list of lowest vertices
+                }
+                // If a lower vertex was encountered, reset the lowest vertices list
+                else if (p_meshVertices[i]->vertex().z() < lowestZVal) {
                     lowestZVal = p_meshVertices[i]->vertex().z();
                     lowestVertices_.clear();
                     lowestVertices_.push_back(p_meshVertices[i]);
@@ -127,15 +149,71 @@ Vector3D MeshVertex::vertex() const {
     return vertex_;
 }
 
-const vector<const shared_ptr<MeshFace>> & MeshVertex::p_faces() const {
+const vector<shared_ptr<MeshFace>> & MeshVertex::p_faces() const {
     return p_faces_;
 }
 
 //MeshEdge class functions
 
-MeshEdge::MeshEdge(shared_ptr<MeshVertex> v1, shared_ptr<MeshVertex> v2) :
-v1_(v1),
-v2_(v2) { }
+/**
+ * The MeshEdge constructor accepts the two points representing the edge
+ * as its arguments. It organizes itself into point 1 and point 2, where
+ * point 1 is defined as being the point which has a lesser z-value. If it
+ * has an equal value, point 1 is the lesser y-value, and if those are equal,
+ * the lesser x-value. If the points are equal, MeshEdge throws an invalid_argument
+ * exception.
+ * This makes it possible to create two MeshEdge objects with the same points
+ * but given in any order, and the MeshEdge objects will always be equivalent.
+ *
+ * @params v1 One of the vertices on the edge
+ * @params v2 The other vertex on the edge
+ */
+MeshEdge::MeshEdge(shared_ptr<MeshVertex> v1, shared_ptr<MeshVertex> v2) {
+    // All the points from each vertex
+    double x1 = v1->vertex().x();
+    double y1 = v1->vertex().y();
+    double z1 = v1->vertex().z();
+
+    double x2 = v2->vertex().x();
+    double y2 = v2->vertex().y();
+    double z2 = v2->vertex().z();
+
+    // Check to see which is v1 and which is v2
+    if (z1 < z2) {
+        v1_ = v1;
+        v2_ = v2;
+    }
+    else if (z2 < z1) {
+        v1_ = v2;
+        v2_ = v1;
+    }
+    else if (y1 < y2) {
+        v1_ = v1;
+        v2_ = v2;
+    }
+    else if (y2 < y1) {
+        v1_ = v2;
+        v2_ = v1;
+    }
+    else if (x1 < x2) {
+        v1_ = v1;
+        v2_ = v2;
+    }
+    else if (x2 < x1) {
+        v1_ = v2;
+        v2_ = v1;
+    } else {
+        throw std::invalid_argument("The two vertices being used to create a MeshEdge are the same");
+    }
+}
+
+std::shared_ptr<MeshVertex> MeshEdge::getV1() const {
+    return v1_;
+}
+
+std::shared_ptr<MeshVertex> MeshEdge::getV2() const {
+    return v2_;
+}
 
 //MeshFace class functions
 

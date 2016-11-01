@@ -9,6 +9,7 @@
 #include <iostream>
 #include <stdlib.h>
 
+#include "Mesh.hpp"
 #include "BuildMap.hpp"
 #include "Clock.hpp"
 #include <cmath>
@@ -18,7 +19,7 @@
 int main(int argc, const char * argv[]) {
     // insert code here...
     printf("Hello, World!\n");
-    
+
     /*
     //testing build map
     srand(16);

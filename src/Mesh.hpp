@@ -12,6 +12,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <string.h>
 
 #include "Vector3D.hpp"
 
@@ -41,19 +42,23 @@ namespace mapmqp {
     public:
         MeshVertex(Vector3D vertex);
         
-        //getters
+        // Getters
         Vector3D vertex() const;
-        const std::vector<const std::shared_ptr<MeshFace>> & p_faces() const;
+        const std::vector<std::shared_ptr<MeshFace>> & p_faces() const;
         
     private:
         Vector3D vertex_;
-        std::vector<const std::shared_ptr<MeshFace>> p_faces_; //all faces that have this vertex as a vertex
+        std::vector<std::shared_ptr<MeshFace>> p_faces_; //all faces that have this vertex as a vertex
     };
     
     class MeshEdge {
         friend class Mesh;
     public:
         MeshEdge(std::shared_ptr<MeshVertex> v1, std::shared_ptr<MeshVertex> v2);
+
+        // Getters
+        std::shared_ptr<MeshVertex> getV1() const;
+        std::shared_ptr<MeshVertex> getV2() const;
         
     private:
         std::shared_ptr<MeshVertex> v1_ = nullptr, v2_ = nullptr;

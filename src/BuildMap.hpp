@@ -35,7 +35,7 @@ namespace mapmqp {
         //surface info
         Vector3D * faceNormals_;
         double * faceAreas_;
-        int faceCount_;
+        unsigned int faceCount_;
         
         //x->theta, y->phi
         ClipperLib::Paths buildMap2D_;

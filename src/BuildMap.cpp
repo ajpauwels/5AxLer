@@ -87,7 +87,7 @@ bool BuildMap::solve() {
             //SimplifyPolygons(holes_); //I don't think this is necessary and takes extra time but not sure
         }
         
-        ClipperLib::Clipper::Clipper buildMapClipper;
+        ClipperLib::Clipper buildMapClipper;
         //set up subject (only look in this box)
         ClipperLib::Path subject;
         subject << ClipperLib::IntPoint(0, 0) << ClipperLib::IntPoint(0, A_AXIS_RANGE) << ClipperLib::IntPoint(B_AXIS_RANGE, A_AXIS_RANGE) << ClipperLib::IntPoint(B_AXIS_RANGE, 0);
