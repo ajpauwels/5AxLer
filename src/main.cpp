@@ -9,6 +9,10 @@
 #include <iostream>
 #include <stdlib.h>
 
+#include "Utility.hpp"
+#include "Clock.hpp"
+
+//for debugging
 #include "BuildMap.hpp"
 #include "Clock.hpp"
 #include <cmath>
@@ -18,6 +22,9 @@
 int main(int argc, const char * argv[]) {
     // insert code here...
     printf("Hello, World!\n");
+    
+    mapmqp::writeLog(mapmqp::INFO_MESSAGE, "starting 5AxLer at time %ld", mapmqp::Clock::wallTime());
+    mapmqp::settingsJSON();
     
     /*
     //testing build map

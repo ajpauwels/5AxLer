@@ -15,10 +15,10 @@
 #include <set>
 #include <unordered_map>
 
-#include "../rapidjson/rapidjson.h"
-#include "../rapidjson/document.h"
-#include "../rapidjson/error/en.h"
-#include "../rapidjson/filereadstream.h"
+#include "../../rapidjson/rapidjson.h"
+#include "../../rapidjson/document.h"
+#include "../../rapidjson/error/en.h"
+#include "../../rapidjson/filereadstream.h"
 #include "../utils/logoutput.h"
 #include "SettingRegistry.h"
 

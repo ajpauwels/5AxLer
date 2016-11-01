@@ -12,9 +12,8 @@
 
 using namespace mapmqp;
 
-Angle::Angle(double val) {
-    this->val(val);
-}
+Angle::Angle(double val) :
+val_(val) { }
 
 double Angle::val() const {
     return val_;

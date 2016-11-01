@@ -13,7 +13,7 @@
 #include "SettingContainer.h"
 
 #include "../utils/NoCopy.h"
-#include "../rapidjson/document.h"
+#include "../../rapidjson/document.h"
 #include "settings.h"
 
 namespace cura

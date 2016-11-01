@@ -10,8 +10,9 @@
 #define Utility_hpp
 
 #define DEBUG_MODE
-
 #define PRINT_LOGS_TO_CONSOLE
+
+#define SETTINGS_JSON_FILE_PATH "settings.json"
 
 //hardware variables
 
@@ -26,7 +27,14 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <fstream>
+#include <sstream>
+#include <memory>
 #include <string>
+
+#include <iostream>
+
+#include "../libs/rapidjson/document.h"
 
 namespace mapmqp {
     enum MESSAGE_TYPE {
@@ -38,21 +46,21 @@ namespace mapmqp {
     //TODO for some stupid reason this won't link if it's in Utility.cpp
     //for the time being declaring it as inline...this should change eventually
     inline void writeLog(MESSAGE_TYPE type, const char * entry, ...) {
-        static bool init = false;
+        static bool logInit = false;
         
         static FILE * logFile;
         static FILE * logInfoFile;
         static FILE * logWarningsFile;
         static FILE * logErrorsFile;
         
-        if (!init) {
+        if (!logInit) {
             //open all log files
             logFile = fopen("mapmqp.log", "w+");
             logInfoFile = fopen("mapmqp-info.log", "w+");
             logWarningsFile = fopen("mapmqp-warnings.log", "w+");
             logErrorsFile = fopen("mapmqp-errors.log", "w+");
             
-            init = true;
+            logInit = true;
         }
         
         //extract string from arguments
@@ -126,6 +134,43 @@ namespace mapmqp {
         printf("\n");
         va_end(argsConsole);
 #endif
+    }
+    
+    inline const std::shared_ptr<rapidjson::Document> settingsJSON() {
+        static bool settingsInit = false;
+        static std::shared_ptr<rapidjson::Document> jsonDoc(new rapidjson::Document());
+        
+        if (!settingsInit) {
+            writeLog(INFO_MESSAGE, "reading settings json file from %s...", SETTINGS_JSON_FILE_PATH);
+            
+            //open settings json file
+            std::ifstream jsonFile;
+            jsonFile.open(SETTINGS_JSON_FILE_PATH);
+            if (jsonFile.is_open()) {
+                //place string value of json in jsonStr
+                std::stringstream strStream;
+                strStream << jsonFile.rdbuf();
+                jsonFile.close();
+                
+                //move json string to buffer and parse into document
+                std::string jsonStr = strStream.str();
+                int jsonStrLen = strlen(jsonStr.c_str());
+                char * buffer = new char[jsonStrLen - 1];
+                std::memcpy(buffer, jsonStr.c_str(), jsonStrLen - 1);
+                if (jsonDoc->ParseInsitu(buffer).HasParseError()) {
+                    writeLog(ERROR_MESSAGE, "error parsing settings json file");
+                } else {
+                    settingsInit = true;
+                }
+                
+                writeLog(INFO_MESSAGE, "%s:\n%s", SETTINGS_JSON_FILE_PATH, jsonStr.c_str());
+            } else {
+                writeLog(ERROR_MESSAGE, "could not read settings json file from path %s", SETTINGS_JSON_FILE_PATH);
+                settingsInit = false;
+            }
+        }
+        
+        return jsonDoc;
     }
 }
 

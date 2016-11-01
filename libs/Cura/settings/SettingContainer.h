@@ -9,7 +9,7 @@
 #include <iostream> // debug out
 
 #include "../utils/NoCopy.h"
-#include "../rapidjson/document.h"
+#include "../../rapidjson/document.h"
 
 namespace cura
 {
