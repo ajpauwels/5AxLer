@@ -6,6 +6,8 @@
 //  Copyright © 2016 MAP MQP. All rights reserved.
 //
 
+#define RUN_TESTS
+
 #include <iostream>
 #include <stdlib.h>
 
@@ -18,13 +20,32 @@
 #include <cmath>
 #include <unordered_map>
 #include <string>
+#include "Mesh.hpp"
+
+#ifdef RUN_TESTS
+#define CATCH_CONFIG_MAIN
+#include "../libs/Catch/catch.hpp"
+#endif
 
 int main(int argc, const char * argv[]) {
     // insert code here...
     printf("Hello, World!\n");
     
+#ifdef RUN_TESTS
+    //run tests
+    mapmqp::writeLog(mapmqp::INFO_MESSAGE, "running tests...\n");
+    int catch_argc = argc;
+    char **catch_argvs;
+    char *catch_a = new char[argc];
+    catch_argvs = &catch_a;
+    catch_main(catch_argc, catch_argvs);
+    //return 0;
+#endif
+    
     mapmqp::writeLog(mapmqp::INFO_MESSAGE, "starting 5AxLer at time %ld", mapmqp::Clock::wallTime());
-    mapmqp::settingsJSON();
+    mapmqp::settingsDocument();
+    
+    mapmqp::Mesh mesh;
     
     /*
     //testing build map

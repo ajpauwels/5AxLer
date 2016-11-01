@@ -136,7 +136,7 @@ namespace mapmqp {
 #endif
     }
     
-    inline const std::shared_ptr<rapidjson::Document> settingsJSON() {
+    inline const std::shared_ptr<rapidjson::Document> settingsDocument() {
         static bool settingsInit = false;
         static std::shared_ptr<rapidjson::Document> jsonDoc(new rapidjson::Document());
         
@@ -162,11 +162,9 @@ namespace mapmqp {
                 } else {
                     settingsInit = true;
                 }
-                
                 writeLog(INFO_MESSAGE, "%s:\n%s", SETTINGS_JSON_FILE_PATH, jsonStr.c_str());
             } else {
                 writeLog(ERROR_MESSAGE, "could not read settings json file from path %s", SETTINGS_JSON_FILE_PATH);
-                settingsInit = false;
             }
         }
         

@@ -81,22 +81,22 @@ void Mesh::constructMeshFromSTL(string stlFilePath) {
                 pair<unordered_map<Vector3D, shared_ptr<MeshVertex>, MeshVertexHash, MeshVertexEqual>::iterator, bool> emplacePair = mappedVertices.emplace(vertices[i], shared_ptr<MeshVertex>(new MeshVertex(vertices[i]))); //place MeshVertex ptr into hashtable
                 p_meshVertices[i] = emplacePair.first->second; //set MeshVertex ptr to returned value from hashtable in case it has changed
                 if (emplacePair.second) { //if MeshVertex did not exist in hashtable, add to list of vertices
-                    vertices_.push_back(p_meshVertices[i]);
+                    p_vertices_.push_back(p_meshVertices[i]);
                 }
                 
                 //check if any vertices are a lowest vertex
                 if (p_meshVertices[i]->vertex().z() == lowestZVal) { //vertex is a lowest vertex
-                    lowestVertices_.push_back(p_meshVertices[i]);
+                    p_lowestVertices_.push_back(p_meshVertices[i]);
                 } else if (p_meshVertices[i]->vertex().z() < lowestZVal) { //vertex is lower than other lowest vertices
                     //reset list of lowest vertices
                     lowestZVal = p_meshVertices[i]->vertex().z();
-                    lowestVertices_.clear();
-                    lowestVertices_.push_back(p_meshVertices[i]);
+                    p_lowestVertices_.clear();
+                    p_lowestVertices_.push_back(p_meshVertices[i]);
                 }
             }
             
             shared_ptr<MeshFace> p_meshFace(new MeshFace(p_meshVertices[0], p_meshVertices[1], p_meshVertices[2]));
-            faces_.push_back(p_meshFace);
+            p_faces_.push_back(p_meshFace);
             //add p_meshFace to all list of connected faces in vertices
             for (unsigned int i = 0; i < 3; i++) {
                 p_meshVertices[i]->p_faces_.push_back(p_meshFace);
@@ -110,41 +110,41 @@ void Mesh::constructMeshFromSTL(string stlFilePath) {
     }
 }
 
-const vector<shared_ptr<MeshVertex>> & Mesh::vertices() {
-    return vertices_;
+const vector<shared_ptr<MeshVertex>> & Mesh::p_vertices() {
+    return p_vertices_;
 }
 
-const vector<shared_ptr<MeshFace>> & Mesh::faces() {
-    return faces_;
+const vector<shared_ptr<MeshFace>> & Mesh::p_faces() {
+    return p_faces_;
 }
 
 //MeshVertex class functions
 
-MeshVertex::MeshVertex(Vector3D vertex) :
+MeshVertex::MeshVertex(const Vector3D & vertex) :
 vertex_(vertex) { }
 
 Vector3D MeshVertex::vertex() const {
     return vertex_;
 }
 
-const vector<const shared_ptr<MeshFace>> & MeshVertex::p_faces() const {
+const vector<shared_ptr<const MeshFace>> & MeshVertex::p_faces() const {
     return p_faces_;
 }
 
 //MeshEdge class functions
 
-MeshEdge::MeshEdge(shared_ptr<MeshVertex> v1, shared_ptr<MeshVertex> v2) :
-v1_(v1),
-v2_(v2) { }
+MeshEdge::MeshEdge(shared_ptr<const MeshVertex> p_v1, shared_ptr<const MeshVertex> p_v2) :
+p_v1_(p_v1),
+p_v2_(p_v2) { }
 
 //MeshFace class functions
 
-MeshFace::MeshFace(shared_ptr<MeshVertex> v1, shared_ptr<MeshVertex> v2, shared_ptr<MeshVertex> v3) :
-v1_(v1),
-v2_(v2),
-v3_(v3) {
+MeshFace::MeshFace(shared_ptr<const MeshVertex> p_v1, shared_ptr<const MeshVertex> p_v2, shared_ptr<const MeshVertex> p_v3) :
+p_v1_(p_v1),
+p_v2_(p_v2),
+p_v3_(p_v3) {
     //take cross product of (y - z) and (y - z)
-    Vector3D normalUnnormalized = Vector3D::crossProduct(v2->vertex() - v1->vertex(), v3->vertex() - v1->vertex());
+    Vector3D normalUnnormalized = Vector3D::crossProduct(p_v2->vertex() - p_v1->vertex(), p_v3->vertex() - p_v1->vertex());
     //area is equal to half the magnitude of a cross product
     area_ = normalUnnormalized.magnitude() / 2;
     //normalize normal
@@ -152,34 +152,34 @@ v3_(v3) {
     normal_.normalize();
 }
 
-shared_ptr<MeshVertex> MeshFace::v1() {
-    return v1_;
+shared_ptr<const MeshVertex> MeshFace::p_v1() {
+    return p_v1_;
 }
 
-shared_ptr<MeshVertex> MeshFace::v2() {
-    return v2_;
+shared_ptr<const MeshVertex> MeshFace::p_v2() {
+    return p_v2_;
 }
 
-shared_ptr<MeshVertex> MeshFace::v3() {
-    return v3_;
+shared_ptr<const MeshVertex> MeshFace::p_v3() {
+    return p_v3_;
 }
 
-shared_ptr<MeshFace> MeshFace::face12() {
-    return face12_;
+shared_ptr<const MeshFace> MeshFace::p_face12() {
+    return p_face12_;
 }
 
-shared_ptr<MeshFace> MeshFace::face23() {
-    return face23_;
+shared_ptr<const MeshFace> MeshFace::p_face23() {
+    return p_face23_;
 }
 
-shared_ptr<MeshFace> MeshFace::face31() {
-    return face31_;
+shared_ptr<const MeshFace> MeshFace::p_face31() {
+    return p_face31_;
 }
 
-bool MeshFace::intersectsPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
-    double v1Val = Vector3D::dotProduct(planeNormal, v1_->vertex() - pointOnPlane);
-    double v2Val = Vector3D::dotProduct(planeNormal, v2_->vertex() - pointOnPlane);
-    double v3Val = Vector3D::dotProduct(planeNormal, v3_->vertex() - pointOnPlane);
+bool MeshFace::intersectsPlane(const Vector3D & planeNormal, const Vector3D & pointOnPlane) {
+    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - pointOnPlane);
+    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - pointOnPlane);
+    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - pointOnPlane);
     
     if ((v1Val == 0) || (v2Val == 0) || (v3Val == 0)) { //if any point lies exactly on plane, face intersects
         return true;
@@ -192,10 +192,10 @@ bool MeshFace::intersectsPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
     }
 }
 
-bool MeshFace::liesOnPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
-    double v1Val = Vector3D::dotProduct(planeNormal, v1_->vertex() - pointOnPlane);
-    double v2Val = Vector3D::dotProduct(planeNormal, v2_->vertex() - pointOnPlane);
-    double v3Val = Vector3D::dotProduct(planeNormal, v3_->vertex() - pointOnPlane);
+bool MeshFace::liesOnPlane(const Vector3D & planeNormal, const Vector3D & pointOnPlane) {
+    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - pointOnPlane);
+    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - pointOnPlane);
+    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - pointOnPlane);
     
     if ((v1Val == 0) && (v2Val == 0) && (v3Val == 0)) { //if every point lies exactly on plane
         return true;
@@ -204,7 +204,7 @@ bool MeshFace::liesOnPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
     }
 }
 
-pair<Vector3D, Vector3D> MeshFace::planeIntersection(Vector3D planeNormal, Vector3D pointOnPlane) {
+pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNormal, const Vector3D & pointOnPlane) {
     //TODO by finding which point (A) lies on different side than other points (B and C), and finding intersections of lines containing A-B and A-C
     if (intersectsPlane(planeNormal, pointOnPlane)) {
         writeLog(WARNING_MESSAGE, "attempted to find intersection line of MeshFace with plane that does not intersect");
@@ -214,18 +214,18 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(Vector3D planeNormal, Vecto
         return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
     }
     
-    double v1Val = Vector3D::dotProduct(planeNormal, v1_->vertex() - pointOnPlane);
-    double v2Val = Vector3D::dotProduct(planeNormal, v2_->vertex() - pointOnPlane);
-    double v3Val = Vector3D::dotProduct(planeNormal, v3_->vertex() - pointOnPlane);
+    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - pointOnPlane);
+    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - pointOnPlane);
+    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - pointOnPlane);
     
     //if two vertices lie of plane, return edge between vertices
     //TODO determine which order vertices should be placed in pair
     if ((v1Val == 0) && (v2Val == 0)) {
-        return pair<Vector3D, Vector3D>(v1_->vertex(), v2_->vertex());
+        return pair<Vector3D, Vector3D>(p_v1_->vertex(), p_v2_->vertex());
     } else if ((v1Val == 0) && (v3Val == 0)) {
-        return pair<Vector3D, Vector3D>(v1_->vertex(), v3_->vertex());
+        return pair<Vector3D, Vector3D>(p_v1_->vertex(), p_v3_->vertex());
     } else if ((v2Val == 0) && (v3Val == 0)) {
-        return pair<Vector3D, Vector3D>(v2_->vertex(), v3_->vertex());
+        return pair<Vector3D, Vector3D>(p_v2_->vertex(), p_v3_->vertex());
     }
     
     //using method described in stackoverflow post: http://math.stackexchange.com/questions/100439/determine-where-a-vector-will-intersect-a-plane
@@ -233,17 +233,17 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(Vector3D planeNormal, Vecto
     Vector3D p0, p1, p2; //p0 is on opposite side of plane as p1 and p2
     //set p0 to whichever vertex is on opposite side as other vertices
     if (((v1Val <= 0) && (v2Val > 0) && (v3Val > 0)) || ((v1Val >= 0) && (v2Val < 0) && (v3Val < 0))) { //v1 is on side by itself
-        p0 = v1_->vertex();
-        p1 = v2_->vertex();
-        p2 = v3_->vertex();
+        p0 = p_v1_->vertex();
+        p1 = p_v2_->vertex();
+        p2 = p_v3_->vertex();
     } else if (((v2Val <= 0) && (v1Val > 0) && (v3Val > 0)) || ((v2Val >= 0) && (v1Val < 0) && (v3Val < 0))) { //v2 is on side by itself
-        p0 = v2_->vertex();
-        p1 = v1_->vertex();
-        p2 = v3_->vertex();
+        p0 = p_v2_->vertex();
+        p1 = p_v1_->vertex();
+        p2 = p_v3_->vertex();
     } else if (((v3Val <= 0) && (v1Val > 0) && (v2Val > 0)) || ((v3Val >= 0) && (v1Val < 0) && (v2Val < 0))) { //v3 is on side by itself
-        p0 = v3_->vertex();
-        p1 = v1_->vertex();
-        p2 = v2_->vertex();
+        p0 = p_v3_->vertex();
+        p1 = p_v1_->vertex();
+        p2 = p_v2_->vertex();
     }
     
     Vector3D p01 = p1 - p0;

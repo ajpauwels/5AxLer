@@ -21,13 +21,13 @@ namespace mapmqp {
         
         bool solve();
         double area() const;
-        bool checkVector(Vector3D v, bool includeEdges = true) const;
+        bool checkVector(const Vector3D & v, bool includeEdges = true) const;
         Vector3D findValidVector() const;
         Vector3D findBestVector() const; //TODO parameters should be passed in neater fashion
-        double weighVector(Vector3D v) const;
+        double weighVector(const Vector3D & v) const;
         
-        static int phiToAAxisRange(Angle phi);
-        static int thetaToBAxisRange(Angle theta);
+        static int phiToAAxisRange(const Angle & phi);
+        static int thetaToBAxisRange(const Angle & theta);
         static Angle aAxisValToPhi(double aAxisVal);
         static Angle bAxisValToTheta(double bAxisVal);
         

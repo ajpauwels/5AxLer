@@ -121,7 +121,7 @@ double BuildMap::area() const {
     return area;
 }
 
-bool BuildMap::checkVector(Vector3D v, bool includeEdges) const {
+bool BuildMap::checkVector(const Vector3D & v, bool includeEdges) const {
     if (!solved_) {
         writeLog(WARNING_MESSAGE, "BUILD MAP - checking vector of unsolved build map");
         return false;
@@ -233,7 +233,7 @@ Vector3D BuildMap::findBestVector() const {
     return findBestVectorRecursive(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi()), B_AXIS_RANGE / 2, A_AXIS_RANGE / 2, heuristic);
 }
 
-double BuildMap::weighVector(Vector3D v) const {
+double BuildMap::weighVector(const Vector3D & v) const {
     if (!solved_) {
         writeLog(WARNING_MESSAGE, "BUILD MAP - weighing vector of unsolved build map");
         return INFINITY;
@@ -261,12 +261,12 @@ double BuildMap::weighVector(Vector3D v) const {
     return weight;
 }
 
-int BuildMap::phiToAAxisRange(Angle phi) {
+int BuildMap::phiToAAxisRange(const Angle & phi) {
     //phi ranges [0, 2*pi)
     return (phi.val() * 2 * A_AXIS_RANGE) / (2.0 * M_PI);
 }
 
-int BuildMap::thetaToBAxisRange(Angle theta) {
+int BuildMap::thetaToBAxisRange(const Angle & theta) {
     //theta ranges [0, 2*pi)
     return (theta.val() * B_AXIS_RANGE) / (2.0 * M_PI);
 }

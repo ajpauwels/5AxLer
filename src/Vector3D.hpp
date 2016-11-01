@@ -33,8 +33,8 @@ namespace mapmqp {
         void phi(Angle phi);
         void normalize(double magnitude = 1);
         
-        static double dotProduct(Vector3D v1, Vector3D v2);
-        static Vector3D crossProduct(Vector3D v1, Vector3D v2);
+        static double dotProduct(const Vector3D & v1, const Vector3D & v2);
+        static Vector3D crossProduct(const Vector3D & v1, const Vector3D & v2);
         
         Vector3D operator+(const Vector3D & v) const;
         Vector3D operator-(const Vector3D & v) const;
