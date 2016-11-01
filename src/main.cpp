@@ -6,7 +6,7 @@
 //  Copyright © 2016 MAP MQP. All rights reserved.
 //
 
-//testing git
+//final test of xcode git
 
 #include <iostream>
 #include <stdlib.h>
