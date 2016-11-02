@@ -34,7 +34,7 @@ int main(int argc, const char * argv[]) {
     
 #ifdef RUN_TESTS
     //run tests
-    mapmqp::writeLog(mapmqp::INFO, "running tests...");
+    //mapmqp::writeLog(mapmqp::INFO, "running tests...");
     int catch_argc = argc;
     char ** catch_argvs;
     char * catch_a = new char[argc];
@@ -43,10 +43,12 @@ int main(int argc, const char * argv[]) {
     //return 0;
 #endif
     
-    mapmqp::writeLog(mapmqp::INFO, "starting 5AxLer at time %ld", mapmqp::Clock::wallTime());
+    printf("%s\n", mapmqp::Clock::wallTimeString().c_str());
+    mapmqp::writeLog(mapmqp::INFO, "starting 5AxLer at time %s", mapmqp::Clock::wallTimeString().c_str());
     mapmqp::settingsDocument();
     
     mapmqp::Mesh mesh;
+    
     
     /*
     //testing build map

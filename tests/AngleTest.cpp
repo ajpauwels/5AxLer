@@ -13,7 +13,7 @@
 
 using namespace mapmqp;
 
-TEST_CASE("construct multiple Angles", "[angle]") {
+TEST_CASE("construct multiple Angles", "[Angle]") {
     Angle a1(M_PI);
     Angle a2(M_PI * 2);
     Angle a3(M_PI * 3 / 2);

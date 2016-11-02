@@ -12,7 +12,7 @@
 
 using namespace mapmqp;
 
-TEST_CASE("build a basic Mesh from a STL file", "[mesh]") {
+TEST_CASE("build a basic Mesh from a STL file", "[Mesh]") {
     SECTION("build mesh from STL file \"Tee.STL\"") {
         
     }

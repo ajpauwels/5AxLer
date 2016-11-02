@@ -12,7 +12,7 @@
 #define DEBUG_MODE
 #define PRINT_LOGS_TO_CONSOLE
 
-#define SETTINGS_JSON_FILE_PATH "settings.json"
+#define SETTINGS_JSON_FILE_PATH "./settings.json"
 
 //hardware variables
 
@@ -34,7 +34,13 @@
 #include <memory>
 #include <string>
 
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "../libs/rapidjson/document.h"
+
+#include "Clock.hpp"
 
 namespace mapmqp {
     enum MESSAGE_TYPE {
@@ -60,11 +66,20 @@ namespace mapmqp {
         static FILE * logErrorsFile;
         
         if (!logInit) {
+            mkdir("./logs", 0777);
+            
             //open all log files
-            logFile = fopen("mapmqp.log", "w+");
-            logInfoFile = fopen("mapmqp-info.log", "w+");
-            logWarningsFile = fopen("mapmqp-warnings.log", "w+");
-            logErrorsFile = fopen("mapmqp-errors.log", "w+");
+            std::string logFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp.log";
+            std::string logInfoFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-info.log";
+            std::string logWarningsFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-warnings.log";
+            std::string logErrorsFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-errors.log";
+            
+            logFile = fopen(logFilePath.c_str(), "w+");
+            logInfoFile = fopen(logInfoFilePath.c_str(), "w+");
+            logWarningsFile = fopen(logWarningsFilePath.c_str(), "w+");
+            logErrorsFile = fopen(logErrorsFilePath.c_str(), "w+");
+            
+            //TODO confirm this was successful
             
             logInit = true;
         }

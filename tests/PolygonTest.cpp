@@ -12,7 +12,7 @@
 
 using namespace mapmqp;
 
-TEST_CASE("test Polygon construction and intersection", "[polygon]") {
+TEST_CASE("test Polygon construction and intersection", "[Polygon]") {
     SECTION("test square on x/y plane") {
         std::vector<Vector3D> squarePoints;
         squarePoints.push_back(Vector3D(4, 4));

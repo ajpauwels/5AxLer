@@ -13,7 +13,7 @@
 
 using namespace mapmqp;
 
-TEST_CASE("construct multiple Vector3Ds and take the cross and dot products", "[vector]") {
+TEST_CASE("construct multiple Vector3Ds and take the cross and dot products", "[Vector3D]") {
     Vector3D v1(5, 4, 3);
     Vector3D v2(0, 6, 70);
     Vector3D v3(5, 0, 5);

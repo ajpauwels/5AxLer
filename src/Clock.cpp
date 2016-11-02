@@ -7,6 +7,8 @@
 //
 
 #include "Clock.hpp"
+
+#include <ctime>
 #ifdef __APPLE__
 #include <sys/time.h>
 #endif
@@ -15,23 +17,24 @@
 #endif
 
 using namespace mapmqp;
+using namespace std;
 
 Clock::Clock() {
     delta();
 }
 
 long int Clock::delta() {
-    long int currentTime = wallTime();
+    long int currentTime = epochTime();
     long int delta = currentTime - prevTime;
     prevTime = currentTime;
     return delta;
 }
 
 long int Clock::split() const {
-    return wallTime() - prevTime;
+    return epochTime() - prevTime;
 }
 
-long int Clock::wallTime() {
+long int Clock::epochTime() {
 #ifdef __APPLE__
     timeval currentTime;
     gettimeofday(&currentTime, nullptr);
@@ -42,4 +45,20 @@ long int Clock::wallTime() {
     GetSystemTime(&currentTime);
     return (currentTime.wSecond * 1000) + currentTime.wMilliseconds;
 #endif
+}
+
+string Clock::wallTimeString(string dateSeperator, string dateTimeSeperator, string timeSeperator) {
+    time_t rawTime;
+    struct tm * timeInfo;
+    char buffer[64];
+    
+    time(&rawTime);
+    timeInfo = localtime(&rawTime);
+    
+    string format = "%d" + dateSeperator + "%m" + dateSeperator + "%Y" + dateTimeSeperator + "%I" + timeSeperator + "%M" + timeSeperator + "%S";
+    
+    strftime(buffer, 64, format.c_str(), timeInfo);
+    string str(buffer);
+    
+    return str;
 }
