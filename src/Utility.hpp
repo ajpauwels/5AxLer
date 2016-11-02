@@ -27,21 +27,27 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cmath>
 #include <memory>
 #include <string>
-
-#include <iostream>
 
 #include "../libs/rapidjson/document.h"
 
 namespace mapmqp {
     enum MESSAGE_TYPE {
-        INFO_MESSAGE,
-        WARNING_MESSAGE,
-        ERROR_MESSAGE
+        INFO,
+        WARNING,
+        ERROR
     };
+    
+    inline bool doubleEquals(double d1, double d2, double tolerance = 0) {
+        return (fabs(d1 - d2) <= tolerance);
+    }
+    
+    //TODO should these functions have an init function?
     
     //TODO for some stupid reason this won't link if it's in Utility.cpp
     //for the time being declaring it as inline...this should change eventually
@@ -79,7 +85,7 @@ namespace mapmqp {
 #endif
         
         switch (type) {
-            case INFO_MESSAGE: {
+            case INFO: {
                 fprintf(logInfoFile, "[INFO] ");
                 vfprintf(logInfoFile, entry, argsInfo);
                 fprintf(logInfoFile, "\n");
@@ -91,7 +97,7 @@ namespace mapmqp {
 #endif
                 break;
             }
-            case WARNING_MESSAGE: {
+            case WARNING: {
                 fprintf(logWarningsFile, "[WARNING] ");
                 vfprintf(logWarningsFile, entry, argsWarning);
                 fprintf(logWarningsFile, "\n");
@@ -103,7 +109,7 @@ namespace mapmqp {
 #endif
                 break;
             }
-            case ERROR_MESSAGE: {
+            case ERROR: {
                 fprintf(logErrorsFile, "[ERROR] ");
                 vfprintf(logErrorsFile, entry, argsError);
                 fprintf(logErrorsFile, "\n");
@@ -141,7 +147,7 @@ namespace mapmqp {
         static std::shared_ptr<rapidjson::Document> jsonDoc(new rapidjson::Document());
         
         if (!settingsInit) {
-            writeLog(INFO_MESSAGE, "reading settings json file from %s...", SETTINGS_JSON_FILE_PATH);
+            writeLog(INFO, "reading settings json file from %s...", SETTINGS_JSON_FILE_PATH);
             
             //open settings json file
             std::ifstream jsonFile;
@@ -158,13 +164,13 @@ namespace mapmqp {
                 char * buffer = new char[jsonStrLen - 1];
                 std::memcpy(buffer, jsonStr.c_str(), jsonStrLen - 1);
                 if (jsonDoc->ParseInsitu(buffer).HasParseError()) {
-                    writeLog(ERROR_MESSAGE, "error parsing settings json file");
+                    writeLog(ERROR, "error parsing settings json file");
                 } else {
                     settingsInit = true;
                 }
-                writeLog(INFO_MESSAGE, "%s:\n%s", SETTINGS_JSON_FILE_PATH, jsonStr.c_str());
+                writeLog(INFO, "%s:\n%s", SETTINGS_JSON_FILE_PATH, jsonStr.c_str());
             } else {
-                writeLog(ERROR_MESSAGE, "could not read settings json file from path %s", SETTINGS_JSON_FILE_PATH);
+                writeLog(ERROR, "could not read settings json file from path %s", SETTINGS_JSON_FILE_PATH);
             }
         }
         

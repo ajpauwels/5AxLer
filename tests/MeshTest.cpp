@@ -8,11 +8,11 @@
 
 #include "../libs/Catch/catch.hpp"
 
-#include "Mesh.hpp"
+#include "../src/Mesh.hpp"
 
-TEST_CASE("build a basic mesh from a STL file", "[mesh]") {
-    REQUIRE(3 == 4);
-    
+using namespace mapmqp;
+
+TEST_CASE("build a basic Mesh from a STL file", "[mesh]") {
     SECTION("build mesh from STL file \"Tee.STL\"") {
         
     }

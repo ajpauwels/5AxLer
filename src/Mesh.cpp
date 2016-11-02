@@ -50,7 +50,7 @@ void Mesh::constructMeshFromSTL(string stlFilePath) {
     char *header = new char[80];					// The 80-char file header
     unsigned int size;								// The number of triangles in the file
     
-    writeLog(INFO_MESSAGE, "parsing STL file %s...", stlFilePath.c_str());
+    writeLog(INFO, "parsing STL file %s...", stlFilePath.c_str());
     file.open(stlFilePath.c_str(), ios::in | ios::binary);	// Open the file
     if (file.is_open()) {                               // Check that we opened successfully
         file.read(header, 80);							// Get the header
@@ -106,7 +106,7 @@ void Mesh::constructMeshFromSTL(string stlFilePath) {
         }
         file.close();	// Close the file
     } else {
-        writeLog(ERROR_MESSAGE, "unable to open file %s [errno: %d]", stlFilePath.c_str(), strerror(errno));
+        writeLog(ERROR, "unable to open file %s [errno: %d]", stlFilePath.c_str(), strerror(errno));
     }
 }
 
@@ -133,18 +133,18 @@ const vector<shared_ptr<const MeshFace>> & MeshVertex::p_faces() const {
 
 //MeshEdge class functions
 
-MeshEdge::MeshEdge(shared_ptr<const MeshVertex> p_v1, shared_ptr<const MeshVertex> p_v2) :
-p_v1_(p_v1),
-p_v2_(p_v2) { }
+MeshEdge::MeshEdge(shared_ptr<const MeshVertex> p_vertex1, shared_ptr<const MeshVertex> p_vertex2) :
+p_v1_(p_vertex1),
+p_v2_(p_vertex2) { }
 
 //MeshFace class functions
 
-MeshFace::MeshFace(shared_ptr<const MeshVertex> p_v1, shared_ptr<const MeshVertex> p_v2, shared_ptr<const MeshVertex> p_v3) :
-p_v1_(p_v1),
-p_v2_(p_v2),
-p_v3_(p_v3) {
+MeshFace::MeshFace(shared_ptr<const MeshVertex> p_vertex1, shared_ptr<const MeshVertex> p_vertex2, shared_ptr<const MeshVertex> p_vertex3) :
+p_v1_(p_vertex1),
+p_v2_(p_vertex2),
+p_v3_(p_vertex3) {
     //take cross product of (y - z) and (y - z)
-    Vector3D normalUnnormalized = Vector3D::crossProduct(p_v2->vertex() - p_v1->vertex(), p_v3->vertex() - p_v1->vertex());
+    Vector3D normalUnnormalized = Vector3D::crossProduct(p_vertex2->vertex() - p_vertex1->vertex(), p_vertex3->vertex() - p_vertex1->vertex());
     //area is equal to half the magnitude of a cross product
     area_ = normalUnnormalized.magnitude() / 2;
     //normalize normal
@@ -152,15 +152,15 @@ p_v3_(p_v3) {
     normal_.normalize();
 }
 
-shared_ptr<const MeshVertex> MeshFace::p_v1() {
+shared_ptr<const MeshVertex> MeshFace::p_vertex1() {
     return p_v1_;
 }
 
-shared_ptr<const MeshVertex> MeshFace::p_v2() {
+shared_ptr<const MeshVertex> MeshFace::p_vertex2() {
     return p_v2_;
 }
 
-shared_ptr<const MeshVertex> MeshFace::p_v3() {
+shared_ptr<const MeshVertex> MeshFace::p_vertex3() {
     return p_v3_;
 }
 
@@ -207,10 +207,10 @@ bool MeshFace::liesOnPlane(const Vector3D & planeNormal, const Vector3D & pointO
 pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNormal, const Vector3D & pointOnPlane) {
     //TODO by finding which point (A) lies on different side than other points (B and C), and finding intersections of lines containing A-B and A-C
     if (intersectsPlane(planeNormal, pointOnPlane)) {
-        writeLog(WARNING_MESSAGE, "attempted to find intersection line of MeshFace with plane that does not intersect");
+        writeLog(WARNING, "attempted to find intersection line of MeshFace with plane that does not intersect");
         return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
     } else if (liesOnPlane(planeNormal, pointOnPlane)) {
-        writeLog(WARNING_MESSAGE, "attempted to find intersection line of MeshFace with plane that is parallel to face");
+        writeLog(WARNING, "attempted to find intersection line of MeshFace with plane that is parallel to face");
         return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
     }
     
@@ -254,10 +254,10 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNorma
     
     //error checking
     if (t1 > p01.magnitude()) {
-        writeLog(ERROR_MESSAGE, "first intersection point of MeshFace edge and plane is not contained in edge");
+        writeLog(ERROR, "first intersection point of MeshFace edge and plane is not contained in edge");
     }
     if (t2 > p01.magnitude()) {
-        writeLog(ERROR_MESSAGE, "second intersection point of MeshFace edge and plane is not contained in edge");
+        writeLog(ERROR, "second intersection point of MeshFace edge and plane is not contained in edge");
     }
     
     //set intersection points to edge vectors with length of t1/t2

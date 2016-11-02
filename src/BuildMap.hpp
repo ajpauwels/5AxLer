@@ -12,7 +12,7 @@
 #include "Utility.hpp"
 #include "Vector3D.hpp"
 #include "Angle.hpp"
-#include "../libs/clipper/clipper.hpp"
+#include "../libs/Clipper/clipper.hpp"
 
 namespace mapmqp {
     class BuildMap {
@@ -31,7 +31,7 @@ namespace mapmqp {
         static Angle aAxisValToPhi(double aAxisVal);
         static Angle bAxisValToTheta(double bAxisVal);
         
-    //private: //TODO make private - just for debugging
+    private: //TODO make private - just for debugging
         //surface info
         Vector3D * faceNormals_;
         double * faceAreas_;

@@ -8,6 +8,11 @@
 
 #define RUN_TESTS
 
+#ifdef RUN_TESTS
+#define CATCH_CONFIG_MAIN
+#include "../libs/Catch/catch.hpp"
+#endif
+
 #include <iostream>
 #include <stdlib.h>
 
@@ -21,11 +26,7 @@
 #include <unordered_map>
 #include <string>
 #include "Mesh.hpp"
-
-#ifdef RUN_TESTS
-#define CATCH_CONFIG_MAIN
-#include "../libs/Catch/catch.hpp"
-#endif
+//end debugging
 
 int main(int argc, const char * argv[]) {
     // insert code here...
@@ -33,16 +34,16 @@ int main(int argc, const char * argv[]) {
     
 #ifdef RUN_TESTS
     //run tests
-    mapmqp::writeLog(mapmqp::INFO_MESSAGE, "running tests...\n");
+    mapmqp::writeLog(mapmqp::INFO, "running tests...");
     int catch_argc = argc;
-    char **catch_argvs;
-    char *catch_a = new char[argc];
+    char ** catch_argvs;
+    char * catch_a = new char[argc];
     catch_argvs = &catch_a;
     catch_main(catch_argc, catch_argvs);
     //return 0;
 #endif
     
-    mapmqp::writeLog(mapmqp::INFO_MESSAGE, "starting 5AxLer at time %ld", mapmqp::Clock::wallTime());
+    mapmqp::writeLog(mapmqp::INFO, "starting 5AxLer at time %ld", mapmqp::Clock::wallTime());
     mapmqp::settingsDocument();
     
     mapmqp::Mesh mesh;

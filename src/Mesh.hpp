@@ -53,7 +53,7 @@ namespace mapmqp {
     class MeshEdge {
         friend class Mesh;
     public:
-        MeshEdge(std::shared_ptr<const MeshVertex> p_v1, std::shared_ptr<const MeshVertex> p_v2);
+        MeshEdge(std::shared_ptr<const MeshVertex> p_vertex1, std::shared_ptr<const MeshVertex> p_vertex2);
         
     private:
         std::shared_ptr<const MeshVertex> p_v1_ = nullptr, p_v2_ = nullptr;
@@ -62,12 +62,12 @@ namespace mapmqp {
     class MeshFace {
         friend class Mesh;
     public:
-        MeshFace(std::shared_ptr<const MeshVertex> p_v1, std::shared_ptr<const MeshVertex> p_v2, std::shared_ptr<const MeshVertex> p_v3); //TODO add normal checking
+        MeshFace(std::shared_ptr<const MeshVertex> p_vertex1, std::shared_ptr<const MeshVertex> p_vertex2, std::shared_ptr<const MeshVertex> p_vertex3); //TODO add normal checking
         
         //getters
-        std::shared_ptr<const MeshVertex> p_v1();
-        std::shared_ptr<const MeshVertex> p_v2();
-        std::shared_ptr<const MeshVertex> p_v3();
+        std::shared_ptr<const MeshVertex> p_vertex1();
+        std::shared_ptr<const MeshVertex> p_vertex2();
+        std::shared_ptr<const MeshVertex> p_vertex3();
         std::shared_ptr<const MeshFace> p_face12();
         std::shared_ptr<const MeshFace> p_face23();
         std::shared_ptr<const MeshFace> p_face31();

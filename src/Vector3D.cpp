@@ -14,6 +14,8 @@
 
 using namespace mapmqp;
 
+double Vector3D::faultTolerance_ = 0.0;
+
 Vector3D::Vector3D(double x, double y, double z, bool unitVector) :
 x_(x),
 y_(y),
@@ -57,6 +59,10 @@ double Vector3D::magnitude() const {
     return sqrt(x_ * x_ + y_ * y_ + z_ * z_);
 }
 
+double Vector3D::faultTolerance() {
+    return Vector3D::faultTolerance_;
+}
+
 void Vector3D::x(double x) {
     x_ = x;
 }
@@ -85,14 +91,23 @@ void Vector3D::phi(Angle phi) {
 }
 
 void Vector3D::normalize(double value) {
-    double total = fabs(x_) + fabs(y_) + fabs(z_);
-    if (total != 0) {
-        x_ = x_ * value / total;
-        y_ = y_ * value / total;
-        z_ = z_ * value / total;
+    double magnitude = this->magnitude();
+    if (magnitude != 0) {
+        x_ = x_ * value / magnitude;
+        y_ = y_ * value / magnitude;
+        z_ = z_ * value / magnitude;
     } else {
-        writeLog(WARNING_MESSAGE, "attempted to normalize vector of magnitude 0");
+        writeLog(WARNING, "attempted to normalize vector of magnitude 0");
     }
+}
+
+void Vector3D::faultTolerance(double faultTolerance) {
+    Vector3D::faultTolerance_ = faultTolerance_;
+}
+
+bool Vector3D::equals(const Vector3D & v, double faultTolerance) const {
+    Vector3D dV = v - *this;
+    return (fabs(dV.magnitude()) <= faultTolerance);
 }
 
 double Vector3D::dotProduct(const Vector3D & v1, const Vector3D & v2) {
@@ -120,7 +135,7 @@ Vector3D Vector3D::operator/(const double & scale) const {
 }
 
 bool Vector3D::operator==(const Vector3D & v) const {
-    return (x_ == v.x_) && (y_ == v.y_) && (z_ == v.z_);
+    return equals(v, Vector3D::faultTolerance_);
 }
 
 bool Vector3D::operator!=(const Vector3D & v) const {
