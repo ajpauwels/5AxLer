@@ -12,6 +12,7 @@
 #include "Mesh.hpp"
 #include "BuildMap.hpp"
 #include "Clock.hpp"
+#include "ProcessSTL.hpp"
 #include <cmath>
 #include <unordered_map>
 #include <string>
@@ -19,6 +20,8 @@
 int main(int argc, const char * argv[]) {
     // insert code here...
     printf("Hello, World!\n");
+
+    mapmqp::ProcessSTL parser(argv[0]);
 
     /*
     //testing build map

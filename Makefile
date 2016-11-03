@@ -17,8 +17,8 @@ LIB_DIR = ./libs/
 all: $(TARGET)
 
 # To make the final program
-$(TARGET): $(SRC_DIR)$(ENTRY) Mesh.o Vector3D.o Angle.o
-	$(CC) $(CFLAGS) $(BUILD_DIR)Mesh.o $(BUILD_DIR)Vector3D.o $(BUILD_DIR)Angle.o -o $(BUILD_DIR)$(TARGET) $(SRC_DIR)$(ENTRY)
+$(TARGET): $(SRC_DIR)$(ENTRY) Mesh.o Vector3D.o Angle.o ProcessSTL.o
+	$(CC) $(CFLAGS) $(BUILD_DIR)Mesh.o $(BUILD_DIR)Vector3D.o $(BUILD_DIR)Angle.o $(BUILD_DIR)ProcessSTL.o -o $(BUILD_DIR)$(TARGET) $(SRC_DIR)$(ENTRY)
 
 # Build the Mesh object file
 Mesh.o: $(SRC_DIR)Mesh.cpp $(SRC_DIR)Mesh.hpp $(SRC_DIR)Utility.hpp $(SRC_DIR)Vector3D.hpp
@@ -39,6 +39,10 @@ Clock.o: $(SRC_DIR)Clock.cpp $(SRC_DIR)Clock.hpp
 # Build the BuildMap object file
 BuildMap.o: $(SRC_DIR)BuildMap.cpp $(SRC_DIR)BuildMap.hpp $(SRC_DIR)Utility.hpp $(SRC_DIR)Vector3D.hpp $(SRC_DIR)Angle.hpp $(LIB_DIR)clipper/clipper.hpp
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)BuildMap.o $(SRC_DIR)BuildMap.cpp
+
+# Build the ProcessSTL object file
+ProcessSTL.o: $(SRC_DIR)ProcessSTL.cpp $(SRC_DIR)ProcessSTL.hpp
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)ProcessSTL.o $(SRC_DIR)ProcessSTL.cpp
 
 # To clean the program
 clean:

@@ -30,9 +30,9 @@
 
 namespace mapmqp {
     enum MESSAGE_TYPE {
-        INFO_MESSAGE,
-        WARNING_MESSAGE,
-        ERROR_MESSAGE
+        INFO,
+        WARNING,
+        ERROR
     };
     
     //TODO for some stupid reason this won't link if it's in Utility.cpp
@@ -71,7 +71,7 @@ namespace mapmqp {
 #endif
         
         switch (type) {
-            case INFO_MESSAGE: {
+            case INFO: {
                 fprintf(logInfoFile, "[INFO] ");
                 vfprintf(logInfoFile, entry, argsInfo);
                 fprintf(logInfoFile, "\n");
@@ -83,7 +83,7 @@ namespace mapmqp {
 #endif
                 break;
             }
-            case WARNING_MESSAGE: {
+            case WARNING: {
                 fprintf(logWarningsFile, "[WARNING] ");
                 vfprintf(logWarningsFile, entry, argsWarning);
                 fprintf(logWarningsFile, "\n");
@@ -95,7 +95,7 @@ namespace mapmqp {
 #endif
                 break;
             }
-            case ERROR_MESSAGE: {
+            case ERROR: {
                 fprintf(logErrorsFile, "[ERROR] ");
                 vfprintf(logErrorsFile, entry, argsError);
                 fprintf(logErrorsFile, "\n");

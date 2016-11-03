@@ -91,7 +91,7 @@ void Vector3D::normalize(double value) {
         y_ = y_ * value / total;
         z_ = z_ * value / total;
     } else {
-        writeLog(WARNING_MESSAGE, "attempted to normalize vector of magnitude 0");
+        writeLog(WARNING, "attempted to normalize vector of magnitude 0");
     }
 }
 
