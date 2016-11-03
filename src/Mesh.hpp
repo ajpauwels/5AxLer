@@ -23,7 +23,8 @@ namespace mapmqp {
     class Mesh {
     public:
         Mesh();
-        
+		
+		void constructSTLFromMesh(std::string stlFilePath);
         void constructMeshFromSTL(std::string stlFilePath);
         
         const std::vector<std::shared_ptr<MeshVertex>> & p_vertices();
@@ -71,6 +72,7 @@ namespace mapmqp {
         std::shared_ptr<const MeshFace> p_face12();
         std::shared_ptr<const MeshFace> p_face23();
         std::shared_ptr<const MeshFace> p_face31();
+		Vector3D p_normal();
         
         //returns whether or not the face intersections with a plane with a normal of planeNormal and contains the coordinate pointOnPoint
         bool intersectsPlane(const Vector3D & planeNormal, const Vector3D & pointOnPlane);
