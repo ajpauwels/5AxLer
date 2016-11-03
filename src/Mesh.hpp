@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "Vector3D.hpp"
+#include "Polygon.hpp"
 
 namespace mapmqp {
     //forward declarations to use pointers
@@ -27,8 +28,10 @@ namespace mapmqp {
 		void constructSTLFromMesh(std::string stlFilePath);
         void constructMeshFromSTL(std::string stlFilePath);
         
-        const std::vector<std::shared_ptr<MeshVertex>> & p_vertices();
-        const std::vector<std::shared_ptr<MeshFace>> & p_faces();
+        const std::vector<std::shared_ptr<MeshVertex>> & p_vertices() const;
+        const std::vector<std::shared_ptr<MeshFace>> & p_faces() const;
+        
+        std::vector<Polygon> planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin) const;
         
     private:
         std::vector<std::shared_ptr<MeshVertex>> p_vertices_;
@@ -66,21 +69,22 @@ namespace mapmqp {
         MeshFace(std::shared_ptr<const MeshVertex> p_vertex1, std::shared_ptr<const MeshVertex> p_vertex2, std::shared_ptr<const MeshVertex> p_vertex3); //TODO add normal checking
         
         //getters
-        std::shared_ptr<const MeshVertex> p_vertex1();
-        std::shared_ptr<const MeshVertex> p_vertex2();
-        std::shared_ptr<const MeshVertex> p_vertex3();
-        std::shared_ptr<const MeshFace> p_face12();
-        std::shared_ptr<const MeshFace> p_face23();
-        std::shared_ptr<const MeshFace> p_face31();
+        std::shared_ptr<const MeshVertex> p_vertex1() const;
+        std::shared_ptr<const MeshVertex> p_vertex2() const;
+        std::shared_ptr<const MeshVertex> p_vertex3() const;
+        std::shared_ptr<const MeshFace> p_face12() const;
+        std::shared_ptr<const MeshFace> p_face23() const;
+        std::shared_ptr<const MeshFace> p_face31() const;
 		Vector3D p_normal();
         
         //returns whether or not the face intersections with a plane with a normal of planeNormal and contains the coordinate pointOnPoint
-        bool intersectsPlane(const Vector3D & planeNormal, const Vector3D & pointOnPlane);
+        bool intersectsPlane(const Vector3D & planeNormal, const Vector3D & planeOrigin) const;
         
         //returns whether or not the entire face lays is on a plane with a normal of planeNormal and contains the coordinate pointOnPoint (that is, all vertices of face lie on the plane)
-        bool liesOnPlane(const Vector3D & planeNormal, const Vector3D & pointOnPlane);
+        bool liesOnPlane(const Vector3D & planeNormal, const Vector3D & planeOrigin) const;
+        
         //if the face intersections with a plane with a normal of planeNormal and contains the coordinate pointOnPoint and does not lie entirely on the plane, returns the line of intersection between the face and the plane
-        std::pair<Vector3D, Vector3D> planeIntersection(const Vector3D & planeNormal, const Vector3D & pointOnPlane);
+        std::pair<Vector3D, Vector3D> planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin) const;
         
     private:
         //x, y, z vertices in counter-clockwise order

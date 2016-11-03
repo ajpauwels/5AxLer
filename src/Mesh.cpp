@@ -45,7 +45,6 @@ struct MeshVertexEqual {
 
 Mesh::Mesh() { }
 
-
 void Mesh::constructSTLFromMesh(string stlFilePath){
 	ofstream file;
 	
@@ -94,7 +93,7 @@ void Mesh::constructSTLFromMesh(string stlFilePath){
 		}
 		
 		file.close();
-	}else {
+	} else {
 		writeLog(ERROR, "unable to open file %s [errno: %d]", stlFilePath.c_str(), strerror(errno));
 	}
 }
@@ -164,12 +163,51 @@ void Mesh::constructMeshFromSTL(string stlFilePath) {
     }
 }
 
-const vector<shared_ptr<MeshVertex>> & Mesh::p_vertices() {
+const vector<shared_ptr<MeshVertex>> & Mesh::p_vertices() const {
     return p_vertices_;
 }
 
-const vector<shared_ptr<MeshFace>> & Mesh::p_faces() {
+const vector<shared_ptr<MeshFace>> & Mesh::p_faces() const {
     return p_faces_;
+}
+
+std::vector<Polygon> Mesh::planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin) const {
+    vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>> faceIntersections;
+    
+    //find all intersections with plane
+    for (vector<shared_ptr<MeshFace>>::const_iterator it = p_faces_.begin(); it != p_faces().end(); it++) {
+        shared_ptr<MeshFace> p_face = *it;
+        if (p_face->intersectsPlane(planeNormal, planeOrigin)) {
+            //TODO check for face lying entirely on plane
+            faceIntersections.push_back(pair<pair<Vector3D, Vector3D>, shared_ptr<MeshFace>>(p_face->planeIntersection(planeNormal, planeOrigin), *it));
+        }
+    }
+    
+    vector<Polygon> polygons;
+    
+    while (faceIntersections.size() > 0) {
+        if (faceIntersections.size() < 3) {
+            writeLog(ERROR, "attempting to create polygon from less than 3 face intersections");
+            break;
+        }
+        
+        vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>> polygonLines;
+        polygonLines.push_back(pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>(faceIntersections[0].first, faceIntersections[0].second));
+        faceIntersections.erase(faceIntersections.begin());
+        
+        Vector3D front = polygonLines[0].first.first;
+        Vector3D back = polygonLines[0].first.second;
+        
+        bool breakWhile = true;
+        while (breakWhile) {
+            breakWhile = true;
+            for (vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>>::iterator it = faceIntersections.begin(); it != faceIntersections.end(); it++) {
+                pair<Vector3D, Vector3D> line = it->first;
+            }
+        }
+    }
+    
+    return polygons;
 }
 
 //MeshVertex class functions
@@ -206,27 +244,27 @@ p_v3_(p_vertex3) {
     normal_.normalize();
 }
 
-shared_ptr<const MeshVertex> MeshFace::p_vertex1() {
+shared_ptr<const MeshVertex> MeshFace::p_vertex1() const {
     return p_v1_;
 }
 
-shared_ptr<const MeshVertex> MeshFace::p_vertex2() {
+shared_ptr<const MeshVertex> MeshFace::p_vertex2() const {
     return p_v2_;
 }
 
-shared_ptr<const MeshVertex> MeshFace::p_vertex3() {
+shared_ptr<const MeshVertex> MeshFace::p_vertex3() const {
     return p_v3_;
 }
 
-shared_ptr<const MeshFace> MeshFace::p_face12() {
+shared_ptr<const MeshFace> MeshFace::p_face12() const {
     return p_face12_;
 }
 
-shared_ptr<const MeshFace> MeshFace::p_face23() {
+shared_ptr<const MeshFace> MeshFace::p_face23() const {
     return p_face23_;
 }
 
-shared_ptr<const MeshFace> MeshFace::p_face31() {
+shared_ptr<const MeshFace> MeshFace::p_face31() const {
     return p_face31_;
 }
 
@@ -234,10 +272,10 @@ Vector3D MeshFace::p_normal(){
 	return normal_;
 }
 
-bool MeshFace::intersectsPlane(const Vector3D & planeNormal, const Vector3D & pointOnPlane) {
-    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - pointOnPlane);
-    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - pointOnPlane);
-    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - pointOnPlane);
+bool MeshFace::intersectsPlane(const Vector3D & planeNormal, const Vector3D & planeOrigin) const {
+    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - planeOrigin);
+    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - planeOrigin);
+    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - planeOrigin);
     
     if ((v1Val == 0) || (v2Val == 0) || (v3Val == 0)) { //if any point lies exactly on plane, face intersects
         return true;
@@ -250,10 +288,10 @@ bool MeshFace::intersectsPlane(const Vector3D & planeNormal, const Vector3D & po
     }
 }
 
-bool MeshFace::liesOnPlane(const Vector3D & planeNormal, const Vector3D & pointOnPlane) {
-    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - pointOnPlane);
-    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - pointOnPlane);
-    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - pointOnPlane);
+bool MeshFace::liesOnPlane(const Vector3D & planeNormal, const Vector3D & planeOrigin) const {
+    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - planeOrigin);
+    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - planeOrigin);
+    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - planeOrigin);
     
     if ((v1Val == 0) && (v2Val == 0) && (v3Val == 0)) { //if every point lies exactly on plane
         return true;
@@ -262,19 +300,19 @@ bool MeshFace::liesOnPlane(const Vector3D & planeNormal, const Vector3D & pointO
     }
 }
 
-pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNormal, const Vector3D & pointOnPlane) {
+pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin) const {
     //TODO by finding which point (A) lies on different side than other points (B and C), and finding intersections of lines containing A-B and A-C
-    if (intersectsPlane(planeNormal, pointOnPlane)) {
+    if (intersectsPlane(planeNormal, planeOrigin)) {
         writeLog(WARNING, "attempted to find intersection line of MeshFace with plane that does not intersect");
         return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
-    } else if (liesOnPlane(planeNormal, pointOnPlane)) {
+    } else if (liesOnPlane(planeNormal, planeOrigin)) {
         writeLog(WARNING, "attempted to find intersection line of MeshFace with plane that is parallel to face");
         return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
     }
     
-    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - pointOnPlane);
-    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - pointOnPlane);
-    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - pointOnPlane);
+    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - planeOrigin);
+    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - planeOrigin);
+    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - planeOrigin);
     
     //if two vertices lie of plane, return edge between vertices
     //TODO determine which order vertices should be placed in pair
@@ -307,8 +345,8 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNorma
     Vector3D p01 = p1 - p0;
     Vector3D p02 = p2 - p0;
     
-    double t01 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p01);
-    double t02 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p02);
+    double t01 = Vector3D::dotProduct(planeNormal, planeOrigin - p0) / Vector3D::dotProduct(planeNormal, p01);
+    double t02 = Vector3D::dotProduct(planeNormal, planeOrigin - p0) / Vector3D::dotProduct(planeNormal, p02);
     
     //error checking
     if (t01 > p01.magnitude()) {
@@ -322,6 +360,8 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNorma
     Vector3D intersect01 = p01, intersect02 = p02;
     intersect01.normalize(t01);
     intersect02.normalize(t02);
+    
+    //TODO order these
     
     return pair<Vector3D, Vector3D>(intersect01, intersect02);
 }
