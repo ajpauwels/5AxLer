@@ -45,6 +45,60 @@ struct MeshVertexEqual {
 
 Mesh::Mesh() { }
 
+
+void Mesh::constructSTLFromMesh(string stlFilePath){
+	ofstream file;
+	
+	unsigned int twoByte = 0x0000;						//filler
+	int size = p_faces().size();						//number of faces in mesh
+	
+	writeLog(INFO, "converting mesh to STL file %s...", stlFilePath.c_str());
+	
+	file.open(stlFilePath.c_str(), ios::out | ios::binary);	// Open the file
+	if (file.is_open()) {                               // Check that we opened successfully
+		
+		for(int i = 0; i < 40; i++){					//write 80 byte header. header is unused
+			file.write(reinterpret_cast<const char *>(&twoByte), 2);
+		}
+		
+		file.write(reinterpret_cast<char*>(&size),4);
+		
+		for (unsigned long i = 0; i < size; ++i) {		// Loop through all triangles
+			Vector3D normal = p_faces_[i]->p_normal();
+			float normalX = (float)normal.x();
+			float normalY = (float)normal.y();
+			float normalZ = (float)normal.z();
+			float vertex1X = (float)p_faces_[i]->p_vertex1()->vertex().x();
+			float vertex1Y = (float)p_faces_[i]->p_vertex1()->vertex().y();
+			float vertex1Z = (float)p_faces_[i]->p_vertex1()->vertex().z();
+			float vertex2X = (float)p_faces_[i]->p_vertex2()->vertex().x();
+			float vertex2Y = (float)p_faces_[i]->p_vertex2()->vertex().y();
+			float vertex2Z = (float)p_faces_[i]->p_vertex2()->vertex().z();
+			float vertex3X = (float)p_faces_[i]->p_vertex3()->vertex().x();
+			float vertex3Y = (float)p_faces_[i]->p_vertex3()->vertex().y();
+			float vertex3Z = (float)p_faces_[i]->p_vertex3()->vertex().z();
+			
+			file.write((char *)&normalX, 4);
+			file.write((char *)&normalY, 4);
+			file.write((char *)&normalZ, 4);
+			file.write((char *)&vertex1X, 4);
+			file.write((char *)&vertex1Y, 4);
+			file.write((char *)&vertex1Z, 4);
+			file.write((char *)&vertex2X, 4);
+			file.write((char *)&vertex2Y, 4);
+			file.write((char *)&vertex2Z, 4);
+			file.write((char *)&vertex3X, 4);
+			file.write((char *)&vertex3Y, 4);
+			file.write((char *)&vertex3Z, 4);
+			file.write((char *)&twoByte, 2);
+		}
+		
+		file.close();
+	}else {
+		writeLog(ERROR, "unable to open file %s [errno: %d]", stlFilePath.c_str(), strerror(errno));
+	}
+}
+
 void Mesh::constructMeshFromSTL(string stlFilePath) {
     ifstream file;									// Our file handler
     char *header = new char[80];					// The 80-char file header
@@ -174,6 +228,10 @@ shared_ptr<const MeshFace> MeshFace::p_face23() {
 
 shared_ptr<const MeshFace> MeshFace::p_face31() {
     return p_face31_;
+}
+
+Vector3D MeshFace::p_normal(){
+	return normal_;
 }
 
 bool MeshFace::intersectsPlane(const Vector3D & planeNormal, const Vector3D & pointOnPlane) {
