@@ -1,0 +1,9 @@
+[INFO] starting 5AxLer at time 02/11/2016 07:09:09
+[INFO] reading settings json file from ./settings.json...
+[ERROR] error parsing settings json file
+[INFO] ./settings.json:
+{
+  "name": "Ethan",
+  "age": 21
+}
+

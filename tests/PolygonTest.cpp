@@ -8,6 +8,7 @@
 
 #include "../libs/Catch/catch.hpp"
 
+#include "../src/Utility.hpp"
 #include "../src/Polygon.hpp"
 
 using namespace mapmqp;
@@ -33,13 +34,23 @@ TEST_CASE("test Polygon construction and intersection", "[Polygon]") {
         REQUIRE(square.area() == 25);
     }
     
-    /*SECTION("test square on non-axis aligned plane") {
+    SECTION("test square on non-axis aligned plane") {
+        Vector3D origin(1, 1, 1);
+        Vector3D xAxis(Angle(5 * M_PI / 4), Angle(fabs(origin.phi().val() - (M_PI / 2))));
+        Vector3D yAxis = Vector3D::crossProduct(origin, xAxis);
+        
+        REQUIRE(doubleEquals(Vector3D::dotProduct(origin, xAxis), 0, 0.0000001));
+        REQUIRE(doubleEquals(Vector3D::dotProduct(origin, yAxis), 0, 0.0000001));
+        REQUIRE(doubleEquals(Vector3D::dotProduct(xAxis, yAxis), 0, 0.0000001));
+        
+        xAxis.normalize(10);
+        yAxis.normalize(10);
+        
         std::vector<Vector3D> squarePoints;
-        squarePoints.push_back(Vector3D(10, 0, 5));
-        squarePoints.push_back(Vector3D(0, 10, 5));
-        squarePoints.push_back(Vector3D(0, 10, -5));
-        squarePoints.push_back(Vector3D(10, 0, -5));
-        //parallelogramPoints.push_back(Vector3D(10, 10, -5));
+        squarePoints.push_back(origin);
+        squarePoints.push_back(origin + xAxis);
+        squarePoints.push_back(origin + xAxis - yAxis);
+        squarePoints.push_back(origin - yAxis);
         Polygon square(squarePoints);
         
         REQUIRE(square.area() == 100);
@@ -48,6 +59,10 @@ TEST_CASE("test Polygon construction and intersection", "[Polygon]") {
             Polygon mappedSquare = square.mapToXYPlane();
             
             REQUIRE(mappedSquare.area() == 100);
+            REQUIRE(mappedSquare.points()[0].equals(Vector3D(0, 0, 0), 0.0000001));
+            REQUIRE(mappedSquare.points()[1].equals(Vector3D(10, 0, 0), 0.0000001));
+            REQUIRE(mappedSquare.points()[2].equals(Vector3D(10, -10, 0), 0.0000001));
+            REQUIRE(mappedSquare.points()[3].equals(Vector3D(0, -10, 0), 0.0000001));
         }
     }
     
@@ -56,15 +71,14 @@ TEST_CASE("test Polygon construction and intersection", "[Polygon]") {
         parallelogramPoints.push_back(Vector3D(5, 0, 0));
         parallelogramPoints.push_back(Vector3D(0, 0, 5));
         parallelogramPoints.push_back(Vector3D(0, 5, 0));
-        //parallelogramPoints.push_back(Vector3D(10, 10, -5));
         Polygon parallelogram(parallelogramPoints);
         
-        REQUIRE(parallelogram.area() == 64);
+        REQUIRE(doubleEquals(parallelogram.area(), 21.6506350946, 0.0001));
         
         SECTION("test parallelogram mapped to x/y plane") {
             Polygon mappedParallelogram = parallelogram.mapToXYPlane();
             
-            REQUIRE(mappedParallelogram.area() == 64);
+            REQUIRE(doubleEquals(parallelogram.area(), mappedParallelogram.area(), 0.0000001));
         }
-    }*/
+    }
 }

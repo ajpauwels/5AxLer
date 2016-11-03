@@ -249,21 +249,21 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNorma
     Vector3D p01 = p1 - p0;
     Vector3D p02 = p2 - p0;
     
-    double t1 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p01);
-    double t2 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p02);
+    double t01 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p01);
+    double t02 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p02);
     
     //error checking
-    if (t1 > p01.magnitude()) {
+    if (t01 > p01.magnitude()) {
         writeLog(ERROR, "first intersection point of MeshFace edge and plane is not contained in edge");
     }
-    if (t2 > p01.magnitude()) {
+    if (t02 > p01.magnitude()) {
         writeLog(ERROR, "second intersection point of MeshFace edge and plane is not contained in edge");
     }
     
     //set intersection points to edge vectors with length of t1/t2
-    Vector3D intersect1 = p01, intersect2 = p02;
-    intersect1.normalize(t1);
-    intersect2.normalize(t2);
+    Vector3D intersect01 = p01, intersect02 = p02;
+    intersect01.normalize(t01);
+    intersect02.normalize(t02);
     
-    return pair<Vector3D, Vector3D>(intersect1, intersect2);
+    return pair<Vector3D, Vector3D>(intersect01, intersect02);
 }

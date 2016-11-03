@@ -43,7 +43,6 @@ int main(int argc, const char * argv[]) {
     //return 0;
 #endif
     
-    printf("%s\n", mapmqp::Clock::wallTimeString().c_str());
     mapmqp::writeLog(mapmqp::INFO, "starting 5AxLer at time %s", mapmqp::Clock::wallTimeString().c_str());
     mapmqp::settingsDocument();
     

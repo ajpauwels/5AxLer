@@ -9,5 +9,3 @@
 #include "Utility.hpp"
 
 using namespace mapmqp;
-
-

@@ -1,0 +1,8 @@
+[INFO] starting 5AxLer at time 03/11/2016 02:18:25
+[INFO] reading settings json file from ./settings.json...
+[INFO] ./settings.json:
+{
+  "name": "Ethan",
+  "age": 21
+}
+

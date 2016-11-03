@@ -83,6 +83,7 @@ Vector3D Polygon::mapPointToXYPlane(const Vector3D & point) const {
     //map to x/y plane using method described in stackoverflow post: http://stackoverflow.com/questions/23472048/projecting-3d-points-to-2d-plane#23474396
     double mappedX = Vector3D::dotProduct(planeAxisX_, point - planeOrigin_);
     double mappedY = Vector3D::dotProduct(planeAxisY_, point - planeOrigin_);
+    double s = Vector3D::dotProduct(planeNormal_, point - planeOrigin_);
     return Vector3D(mappedX, mappedY, 0);
 }
 
