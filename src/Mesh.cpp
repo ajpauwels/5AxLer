@@ -26,11 +26,64 @@ using namespace mapmqp;
 
 Mesh::Mesh() { }
 
-const vector<shared_ptr<MeshVertex>> & Mesh::vertices() {
+const vector<shared_ptr<MeshVertex>> & Mesh::vertices() const {
     return vertices_;
 }
 
-const vector<shared_ptr<MeshFace>> & Mesh::faces() {
+// void Mesh::constructSTLFromMesh(string stlFilePath){
+// 	ofstream file;
+	
+// 	unsigned int twoByte = 0x0000;						//filler
+// 	int size = p_faces().size();						//number of faces in mesh
+	
+// 	writeLog(INFO, "converting mesh to STL file %s...", stlFilePath.c_str());
+	
+// 	file.open(stlFilePath.c_str(), ios::out | ios::binary);	// Open the file
+// 	if (file.is_open()) {                               // Check that we opened successfully
+		
+// 		for(int i = 0; i < 40; i++){					//write 80 byte header. header is unused
+// 			file.write(reinterpret_cast<const char *>(&twoByte), 2);
+// 		}
+		
+// 		file.write(reinterpret_cast<char*>(&size),4);
+		
+// 		for (unsigned long i = 0; i < size; ++i) {		// Loop through all triangles
+// 			Vector3D normal = p_faces_[i]->p_normal();
+// 			float normalX = (float)normal.x();
+// 			float normalY = (float)normal.y();
+// 			float normalZ = (float)normal.z();
+// 			float vertex1X = (float)p_faces_[i]->p_vertex1()->vertex().x();
+// 			float vertex1Y = (float)p_faces_[i]->p_vertex1()->vertex().y();
+// 			float vertex1Z = (float)p_faces_[i]->p_vertex1()->vertex().z();
+// 			float vertex2X = (float)p_faces_[i]->p_vertex2()->vertex().x();
+// 			float vertex2Y = (float)p_faces_[i]->p_vertex2()->vertex().y();
+// 			float vertex2Z = (float)p_faces_[i]->p_vertex2()->vertex().z();
+// 			float vertex3X = (float)p_faces_[i]->p_vertex3()->vertex().x();
+// 			float vertex3Y = (float)p_faces_[i]->p_vertex3()->vertex().y();
+// 			float vertex3Z = (float)p_faces_[i]->p_vertex3()->vertex().z();
+			
+// 			file.write((char *)&normalX, 4);
+// 			file.write((char *)&normalY, 4);
+// 			file.write((char *)&normalZ, 4);
+// 			file.write((char *)&vertex1X, 4);
+// 			file.write((char *)&vertex1Y, 4);
+// 			file.write((char *)&vertex1Z, 4);
+// 			file.write((char *)&vertex2X, 4);
+// 			file.write((char *)&vertex2Y, 4);
+// 			file.write((char *)&vertex2Z, 4);
+// 			file.write((char *)&vertex3X, 4);
+// 			file.write((char *)&vertex3Y, 4);
+// 			file.write((char *)&vertex3Z, 4);
+// 			file.write((char *)&twoByte, 2);
+// 		}
+		
+// 		file.close();
+// 	}else {
+// 		writeLog(ERROR, "unable to open file %s [errno: %d]", stlFilePath.c_str(), strerror(errno));
+// 	}
+// }
+
+const vector<shared_ptr<MeshFace>> & Mesh::faces() const {
     return faces_;
 }
 
@@ -49,7 +102,7 @@ void Mesh::addFace(std::shared_ptr<MeshFace> face) {
 
 //MeshVertex class functions
 
-MeshVertex::MeshVertex(Vector3D vertex) :
+MeshVertex::MeshVertex(const Vector3D & vertex) :
 vertex_(vertex) { }
 
 void MeshVertex::addConnectedFace(std::shared_ptr<MeshFace> face) {
@@ -60,7 +113,7 @@ Vector3D MeshVertex::vertex() const {
     return vertex_;
 }
 
-const vector<shared_ptr<MeshFace>> & MeshVertex::p_faces() const {
+const vector<shared_ptr<const MeshFace>> & MeshVertex::p_faces() const {
     return p_faces_;
 }
 
@@ -79,7 +132,7 @@ const vector<shared_ptr<MeshFace>> & MeshVertex::p_faces() const {
  * @params v1 One of the vertices on the edge
  * @params v2 The other vertex on the edge
  */
-MeshEdge::MeshEdge(shared_ptr<MeshVertex> v1, shared_ptr<MeshVertex> v2) {
+MeshEdge::MeshEdge(shared_ptr<const MeshVertex> v1, shared_ptr<const MeshVertex> v2) {
     // All the points from each vertex
     double x1 = v1->vertex().x();
     double y1 = v1->vertex().y();
@@ -122,24 +175,6 @@ MeshEdge::MeshEdge(shared_ptr<MeshVertex> v1, shared_ptr<MeshVertex> v2) {
     // p_faces_[1] = nullptr;
 }
 
-// /**
-//  * Adds a MeshFace to the MeshEdge as a connected MeshFace.
-//  * If the MeshEdge is already connected to two faces, nothing
-//  * happens but an error is written to the log.
-//  *
-//  * @param p_face A shared pointer to a MeshFace
-//  */
-// void MeshEdge::addFace(shared_ptr<MeshFace> p_face) {
-//     if (p_faces_[0] == nullptr) {
-//         p_faces_[0] = p_face;
-//     }
-//     else if (p_faces_[1] == nullptr) {
-//         p_faces_[1] = p_face;
-//     } else {
-//         writeLog(ERROR, "tried to add a 3rd face to a MeshEdge that already had two");
-//     }
-// }
-
 /**
  * Returns one of the two vertices of the edge. Takes value
  * 0 or 1 to retrieve the first and second vertex, respectively.
@@ -150,7 +185,7 @@ MeshEdge::MeshEdge(shared_ptr<MeshVertex> v1, shared_ptr<MeshVertex> v2) {
  *
  * @return The vertex with the lowest z-, y-, or x-value
  */
-const std::shared_ptr<MeshVertex> MeshEdge::getVertex(uint16_t v) const {
+const std::shared_ptr<const MeshVertex> MeshEdge::getVertex(uint16_t v) const {
     if (v < 0 && v > 1) {
         writeLog(ERROR, "tried to access vertex %d in a MeshEdge (range 0 to 1)", v);
         return nullptr;
@@ -158,26 +193,6 @@ const std::shared_ptr<MeshVertex> MeshEdge::getVertex(uint16_t v) const {
 
     return p_vertices_[v];
 }
-
-// *
-//  * Returns one of the two possible faces connected to the edge.
-//  * Takes value 0 or 1 to retrieve the first or second face, respectively.
-//  * There is no particular order to the faces, it is simply in the
-//  * order that they were set.
-//  * A nullptr is returned if an invalid face is requested, or
-//  * there is no connected face at that index.
-//  *
-//  * @param f 0 or 1 depending on which face is desired
-//  *
-//  * @return The first face connected to the edge
-// std::shared_ptr<MeshFace> MeshEdge::getFace(uint16_t f) const {
-//     if (v < 0 && v > 1) {
-//         writeLog(ERROR, "tried to access face %d in a MeshEdge (range 0 to 1)", f);
-//         return nullptr;
-//     }
-
-//     return p_faces_[v];
-// }
 
 /**
  * Overrides the == operator and checks to see if the first
@@ -201,14 +216,14 @@ bool MeshEdge::operator==(const MeshEdge & edge) const {
  * @param v2 The second vertex, counter-clockwise from the first
  * @param v3 The third and final vertex
  */
-MeshFace::MeshFace(shared_ptr<MeshVertex> v1, shared_ptr<MeshVertex> v2, shared_ptr<MeshVertex> v3) {
+MeshFace::MeshFace(shared_ptr<const MeshVertex> v1, shared_ptr<const MeshVertex> v2, shared_ptr<const MeshVertex> v3) {
     // Set the vertices array
     p_vertices_[0] = v1;
     p_vertices_[1] = v2;
     p_vertices_[2] = v3;
 
     //take cross product of (y - z) and (y - z)
-    Vector3D normalUnnormalized = Vector3D::crossProduct(v2->vertex() - v1->vertex(), v3->vertex() - v1->vertex());
+    Vector3D normalUnnormalized = Vector3D::crossProduct(p_vertices_[1]->vertex() - p_vertices_[0]->vertex(), p_vertices_[2]->vertex() - p_vertices_[0]->vertex());
     //area is equal to half the magnitude of a cross product
     area_ = normalUnnormalized.magnitude() / 2;
     //normalize normal
@@ -239,7 +254,7 @@ bool MeshFace::operator==(const MeshFace & face) const {
  *
  * @return The requested MeshVertex pointer
  */
-const shared_ptr<MeshVertex> MeshFace::getVertex(uint16_t v) const {
+const shared_ptr<const MeshVertex> MeshFace::getVertex(uint16_t v) const {
     if (v < 0 && v > 2) {
         writeLog(ERROR, "tried to access vertex %d in triangle (range 0-2)", v);
         return nullptr;
@@ -257,7 +272,7 @@ const shared_ptr<MeshVertex> MeshFace::getVertex(uint16_t v) const {
  *
  * @return The requested MeshFace pointer
  */
-const shared_ptr<MeshFace> MeshFace::getConnectedFace(uint16_t f) const {
+const shared_ptr<const MeshFace> MeshFace::getConnectedFace(uint16_t f) const {
     return p_faces_[f];
 }
 
@@ -304,8 +319,8 @@ int16_t MeshFace::getEdgeIndex(std::shared_ptr<MeshEdge> edge) {
     // Find the index the given face belongs in according to edge order,
     // and then add the given face to this face's list of connected faces
     for (uint16_t i = 0; i < 3; ++i) {
-        shared_ptr<MeshVertex> thisVert1 = p_vertices_[i];
-        shared_ptr<MeshVertex> thisVert2 = p_vertices_[nextCircularIndex(i)];
+        shared_ptr<const MeshVertex> thisVert1 = p_vertices_[i];
+        shared_ptr<const MeshVertex> thisVert2 = p_vertices_[nextCircularIndex(i)];
 
         uint16_t numMatchVertices = (edge->getVertex(0) == thisVert1) +\
         (edge->getVertex(1) == thisVert1) +\
@@ -320,11 +335,10 @@ int16_t MeshFace::getEdgeIndex(std::shared_ptr<MeshEdge> edge) {
     return -1;
 }
 
-bool MeshFace::intersectsPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
+bool MeshFace::intersectsPlane(const Vector3D& planeNormal, const Vector3D& pointOnPlane) {
     double v1Val = Vector3D::dotProduct(planeNormal, p_vertices_[0]->vertex() - pointOnPlane);
     double v2Val = Vector3D::dotProduct(planeNormal, p_vertices_[1]->vertex() - pointOnPlane);
     double v3Val = Vector3D::dotProduct(planeNormal, p_vertices_[2]->vertex() - pointOnPlane);
-    
     if ((v1Val == 0) || (v2Val == 0) || (v3Val == 0)) { //if any point lies exactly on plane, face intersects
         return true;
     } else if ((v1Val < 0) && (v2Val < 0) && (v3Val < 0)) { //if all points lie below plane, face does not intersect
@@ -336,7 +350,11 @@ bool MeshFace::intersectsPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
     }
 }
 
-bool MeshFace::liesOnPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
+Vector3D MeshFace::p_normal(){
+	return normal_;
+}
+
+bool MeshFace::liesOnPlane(const Vector3D& planeNormal, const Vector3D& pointOnPlane) {
     double v1Val = Vector3D::dotProduct(planeNormal, p_vertices_[0]->vertex() - pointOnPlane);
     double v2Val = Vector3D::dotProduct(planeNormal, p_vertices_[1]->vertex() - pointOnPlane);
     double v3Val = Vector3D::dotProduct(planeNormal, p_vertices_[2]->vertex() - pointOnPlane);
@@ -348,7 +366,7 @@ bool MeshFace::liesOnPlane(Vector3D planeNormal, Vector3D pointOnPlane) {
     }
 }
 
-pair<Vector3D, Vector3D> MeshFace::planeIntersection(Vector3D planeNormal, Vector3D pointOnPlane) {
+pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNormal, const Vector3D & pointOnPlane) {
     //TODO by finding which point (A) lies on different side than other points (B and C), and finding intersections of lines containing A-B and A-C
     if (intersectsPlane(planeNormal, pointOnPlane)) {
         writeLog(WARNING, "attempted to find intersection line of MeshFace with plane that does not intersect");
@@ -357,7 +375,7 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(Vector3D planeNormal, Vecto
         writeLog(WARNING, "attempted to find intersection line of MeshFace with plane that is parallel to face");
         return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
     }
-    
+
     double v1Val = Vector3D::dotProduct(planeNormal, p_vertices_[0]->vertex() - pointOnPlane);
     double v2Val = Vector3D::dotProduct(planeNormal, p_vertices_[1]->vertex() - pointOnPlane);
     double v3Val = Vector3D::dotProduct(planeNormal, p_vertices_[2]->vertex() - pointOnPlane);
@@ -393,21 +411,21 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(Vector3D planeNormal, Vecto
     Vector3D p01 = p1 - p0;
     Vector3D p02 = p2 - p0;
     
-    double t1 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p01);
-    double t2 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p02);
+    double t01 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p01);
+    double t02 = Vector3D::dotProduct(planeNormal, pointOnPlane - p0) / Vector3D::dotProduct(planeNormal, p02);
     
     //error checking
-    if (t1 > p01.magnitude()) {
+    if (t01 > p01.magnitude()) {
         writeLog(ERROR, "first intersection point of MeshFace edge and plane is not contained in edge");
     }
-    if (t2 > p01.magnitude()) {
+    if (t02 > p01.magnitude()) {
         writeLog(ERROR, "second intersection point of MeshFace edge and plane is not contained in edge");
     }
     
     //set intersection points to edge vectors with length of t1/t2
-    Vector3D intersect1 = p01, intersect2 = p02;
-    intersect1.normalize(t1);
-    intersect2.normalize(t2);
+    Vector3D intersect01 = p01, intersect02 = p02;
+    intersect01.normalize(t01);
+    intersect02.normalize(t02);
     
-    return pair<Vector3D, Vector3D>(intersect1, intersect2);
+    return pair<Vector3D, Vector3D>(intersect01, intersect02);
 }

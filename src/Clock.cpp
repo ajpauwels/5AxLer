@@ -7,6 +7,8 @@
 //
 
 #include "Clock.hpp"
+
+#include <ctime>
 #ifdef __APPLE__
 #include <sys/time.h>
 #endif
@@ -15,6 +17,7 @@
 #endif
 
 using namespace mapmqp;
+using namespace std;
 
 /**
  * Constructor simply initializes the timer at the current time
@@ -33,7 +36,7 @@ Clock::Clock() {
  * @return A long giving the time elapsed (in milliseconds)
  */
 long int Clock::delta() {
-    long int currentTime = wallTime();
+    long int currentTime = epochTime();
     long int delta = currentTime - prevTime;
     prevTime = currentTime;
     return delta;
@@ -48,7 +51,7 @@ long int Clock::delta() {
  * @return A long giving the time elapsed (in milliseconds)
  */
 long int Clock::split() const {
-    return wallTime() - prevTime;
+    return epochTime() - prevTime;
 }
 
 /**
@@ -57,15 +60,32 @@ long int Clock::split() const {
  *
  * @return A long giving the number of milliseconds since the epoch
  */
-long int Clock::wallTime() {
+long int Clock::epochTime() {
 #ifdef __APPLE__
     timeval currentTime;
     gettimeofday(&currentTime, nullptr);
     return (currentTime.tv_sec * 1000) + (currentTime.tv_usec / 1000); //converts seconds and microseconds to milliseconds
-#endif
-#ifdef _WIN32
+#elif _WIN32
     SYSTEMTIME currentTime;
     GetSystemTime(&currentTime);
     return (currentTime.wSecond * 1000) + currentTime.wMilliseconds;
+#else
+    return 0;
 #endif
+}
+
+string Clock::wallTimeString(string dateSeparator, string dateTimeSeparator, string timeSeparator) {
+    time_t rawTime;
+    struct tm * timeInfo;
+    char buffer[64];
+    
+    time(&rawTime);
+    timeInfo = localtime(&rawTime);
+    
+    string format = "%d" + dateSeparator + "%m" + dateSeparator + "%Y" + dateTimeSeparator + "%I" + timeSeparator + "%M" + timeSeparator + "%S";
+    
+    strftime(buffer, 64, format.c_str(), timeInfo);
+    string str(buffer);
+    
+    return str;
 }

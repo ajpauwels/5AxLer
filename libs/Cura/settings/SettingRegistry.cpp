@@ -8,10 +8,10 @@
 #include <cstring> // strtok (split string using delimiters) strcpy
 #include <fstream> // ifstream (to see if file exists)
 
-#include "../rapidjson/rapidjson.h"
-#include "../rapidjson/document.h"
-#include "../rapidjson/error/en.h"
-#include "../rapidjson/filereadstream.h"
+#include "../../rapidjson/rapidjson.h"
+#include "../../rapidjson/document.h"
+#include "../../rapidjson/error/en.h"
+#include "../../rapidjson/filereadstream.h"
 #include "../utils/logoutput.h"
 
 namespace cura

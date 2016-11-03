@@ -12,13 +12,14 @@ ENTRY = main.cpp
 SRC_DIR = ./src/
 BUILD_DIR = ./build/
 LIB_DIR = ./libs/
+TEST_DIR = ./tests/
 
 # make default call
 all: $(TARGET)
 
 # To make the final program
-$(TARGET): $(SRC_DIR)$(ENTRY) Mesh.o Vector3D.o Angle.o ProcessSTL.o
-	$(CC) $(CFLAGS) $(BUILD_DIR)Mesh.o $(BUILD_DIR)Vector3D.o $(BUILD_DIR)Angle.o $(BUILD_DIR)ProcessSTL.o -o $(BUILD_DIR)$(TARGET) $(SRC_DIR)$(ENTRY)
+$(TARGET): $(SRC_DIR)$(ENTRY) Mesh.o Vector3D.o Angle.o ProcessSTL.o Clock.o
+	$(CC) $(CFLAGS) $(BUILD_DIR)Mesh.o $(BUILD_DIR)Vector3D.o $(BUILD_DIR)Angle.o $(BUILD_DIR)ProcessSTL.o $(BUILD_DIR)Clock.o -o $(BUILD_DIR)$(TARGET) $(SRC_DIR)$(ENTRY)
 
 # Build the Mesh object file
 Mesh.o: $(SRC_DIR)Mesh.cpp $(SRC_DIR)Mesh.hpp $(SRC_DIR)Utility.hpp $(SRC_DIR)Vector3D.hpp
@@ -43,6 +44,10 @@ BuildMap.o: $(SRC_DIR)BuildMap.cpp $(SRC_DIR)BuildMap.hpp $(SRC_DIR)Utility.hpp 
 # Build the ProcessSTL object file
 ProcessSTL.o: $(SRC_DIR)ProcessSTL.cpp $(SRC_DIR)ProcessSTL.hpp
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)ProcessSTL.o $(SRC_DIR)ProcessSTL.cpp
+
+# Build the Tests object file
+# Tests.o: $(TEST_DIR)
+# 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)Tests.o $(TEST_DIR)Tests.cpp
 
 # To clean the program
 clean:
