@@ -13,31 +13,12 @@
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
+#include <math.h>
 
 #include "Utility.hpp"
 
-using namespace std;
 using namespace mapmqp;
-
-//helper struct for unordered map used in parsing the STL file
-struct MeshVertexHash {
-    size_t operator()(const Vector3D & v) const { //TODO use sizeof(long) instead? should they be longs or ints
-        long x = (long)v.x();
-        long y = (long)v.y();
-        long z = (long)v.z();
-        
-        int hashVal = (int)(x ^ (x >> 32));
-        hashVal = 31 * hashVal + (int)(y ^ (y >> 32));
-        hashVal = 31 * hashVal + (int)(z ^ (z >> 32));
-        return hash<int>()(hashVal);
-    }
-};
-
-struct MeshVertexEqual {
-    bool operator()(const Vector3D & v1, const Vector3D & v2) const {
-        return v1.x() == v2.x() && v1.y() == v2.y() && v1.z() == v2.z();
-    }
-};
+using namespace std;
 
 //Mesh class functions
 
@@ -45,123 +26,58 @@ struct MeshVertexEqual {
 
 Mesh::Mesh() { }
 
-void Mesh::constructSTLFromMesh(string stlFilePath){
-	ofstream file;
-	
-	unsigned int twoByte = 0x0000;						//filler
-	int size = p_faces().size();						//number of faces in mesh
-	
-	writeLog(INFO, "converting mesh to STL file %s...", stlFilePath.c_str());
-	
-	file.open(stlFilePath.c_str(), ios::out | ios::binary);	// Open the file
-	if (file.is_open()) {                               // Check that we opened successfully
-		
-		for(int i = 0; i < 40; i++){					//write 80 byte header. header is unused
-			file.write(reinterpret_cast<const char *>(&twoByte), 2);
-		}
-		
-		file.write(reinterpret_cast<char*>(&size),4);
-		
-		for (unsigned long i = 0; i < size; ++i) {		// Loop through all triangles
-			Vector3D normal = p_faces_[i]->p_normal();
-			float normalX = (float)normal.x();
-			float normalY = (float)normal.y();
-			float normalZ = (float)normal.z();
-			float vertex1X = (float)p_faces_[i]->p_vertex1()->vertex().x();
-			float vertex1Y = (float)p_faces_[i]->p_vertex1()->vertex().y();
-			float vertex1Z = (float)p_faces_[i]->p_vertex1()->vertex().z();
-			float vertex2X = (float)p_faces_[i]->p_vertex2()->vertex().x();
-			float vertex2Y = (float)p_faces_[i]->p_vertex2()->vertex().y();
-			float vertex2Z = (float)p_faces_[i]->p_vertex2()->vertex().z();
-			float vertex3X = (float)p_faces_[i]->p_vertex3()->vertex().x();
-			float vertex3Y = (float)p_faces_[i]->p_vertex3()->vertex().y();
-			float vertex3Z = (float)p_faces_[i]->p_vertex3()->vertex().z();
-			
-			file.write((char *)&normalX, 4);
-			file.write((char *)&normalY, 4);
-			file.write((char *)&normalZ, 4);
-			file.write((char *)&vertex1X, 4);
-			file.write((char *)&vertex1Y, 4);
-			file.write((char *)&vertex1Z, 4);
-			file.write((char *)&vertex2X, 4);
-			file.write((char *)&vertex2Y, 4);
-			file.write((char *)&vertex2Z, 4);
-			file.write((char *)&vertex3X, 4);
-			file.write((char *)&vertex3Y, 4);
-			file.write((char *)&vertex3Z, 4);
-			file.write((char *)&twoByte, 2);
-		}
-		
-		file.close();
-	} else {
-		writeLog(ERROR, "unable to open file %s [errno: %d]", stlFilePath.c_str(), strerror(errno));
-	}
-}
+// void Mesh::constructSTLFromMesh(string stlFilePath){
+// 	ofstream file;
 
-void Mesh::constructMeshFromSTL(string stlFilePath) {
-    ifstream file;									// Our file handler
-    char *header = new char[80];					// The 80-char file header
-    unsigned int size;								// The number of triangles in the file
-    
-    writeLog(INFO, "parsing STL file %s...", stlFilePath.c_str());
-    file.open(stlFilePath.c_str(), ios::in | ios::binary);	// Open the file
-    if (file.is_open()) {                               // Check that we opened successfully
-        file.read(header, 80);							// Get the header
-        file.read((char*)&size, 4);						// Get the number of triangles
-        
-        unordered_map<Vector3D, shared_ptr<MeshVertex>, MeshVertexHash, MeshVertexEqual> mappedVertices;
-        
-        double lowestZVal = INFINITY; //TODO should this be an int?
-        
-        for (unsigned int i = 0; i < size; ++i) {		// Loop through all triangles
-            Vector3D norm, vertices[3];                 // Stores the three triangle points + normal vector
-            float points[12] = { };						// 4 vectors * 3 points = 12 points
-            short abc;									// Stores the attribute byte count
-            
-            for (unsigned int j = 0; j < 12; ++j) {		// Get all points from file
-                file.read((char*)(points + j), 4);
-            }
-            file.read((char*)&abc, 2);
-            
-            norm = Vector3D(points[0], points[1], points[2]);           // Create normal vector
-            vertices[0] = Vector3D(points[3], points[4], points[5]);	// Get first point of triangle
-            vertices[1] = Vector3D(points[6], points[7], points[8]);	// Get second point of triangle
-            vertices[2] = Vector3D(points[9], points[10], points[11]);	// Get third point of triangle
-            
-            shared_ptr<MeshVertex> p_meshVertices[3]; //Three MeshVertex pointers
-            
-            for (unsigned int i = 0; i < 3; i++) {
-                pair<unordered_map<Vector3D, shared_ptr<MeshVertex>, MeshVertexHash, MeshVertexEqual>::iterator, bool> emplacePair = mappedVertices.emplace(vertices[i], shared_ptr<MeshVertex>(new MeshVertex(vertices[i]))); //place MeshVertex ptr into hashtable
-                p_meshVertices[i] = emplacePair.first->second; //set MeshVertex ptr to returned value from hashtable in case it has changed
-                if (emplacePair.second) { //if MeshVertex did not exist in hashtable, add to list of vertices
-                    p_vertices_.push_back(p_meshVertices[i]);
-                }
-                
-                //check if any vertices are a lowest vertex
-                if (p_meshVertices[i]->vertex().z() == lowestZVal) { //vertex is a lowest vertex
-                    p_lowestVertices_.push_back(p_meshVertices[i]);
-                } else if (p_meshVertices[i]->vertex().z() < lowestZVal) { //vertex is lower than other lowest vertices
-                    //reset list of lowest vertices
-                    lowestZVal = p_meshVertices[i]->vertex().z();
-                    p_lowestVertices_.clear();
-                    p_lowestVertices_.push_back(p_meshVertices[i]);
-                }
-            }
-            
-            shared_ptr<MeshFace> p_meshFace(new MeshFace(p_meshVertices[0], p_meshVertices[1], p_meshVertices[2]));
-            p_faces_.push_back(p_meshFace);
-            //add p_meshFace to all list of connected faces in vertices
-            for (unsigned int i = 0; i < 3; i++) {
-                p_meshVertices[i]->p_faces_.push_back(p_meshFace);
-            }
-            
-            //TODO add adjacent faces
-        }
-        file.close();	// Close the file
-    } else {
-        writeLog(ERROR, "unable to open file %s [errno: %d]", stlFilePath.c_str(), strerror(errno));
-    }
-}
+// 	unsigned int twoByte = 0x0000;						//filler
+// 	int size = p_faces().size();						//number of faces in mesh
+
+// 	writeLog(INFO, "converting mesh to STL file %s...", stlFilePath.c_str());
+
+// 	file.open(stlFilePath.c_str(), ios::out | ios::binary);	// Open the file
+// 	if (file.is_open()) {                               // Check that we opened successfully
+
+// 		for(int i = 0; i < 40; i++){					//write 80 byte header. header is unused
+// 			file.write(reinterpret_cast<const char *>(&twoByte), 2);
+// 		}
+
+// 		file.write(reinterpret_cast<char*>(&size),4);
+
+// 		for (unsigned long i = 0; i < size; ++i) {		// Loop through all triangles
+// 			Vector3D normal = p_faces_[i]->p_normal();
+// 			float normalX = (float)normal.x();
+// 			float normalY = (float)normal.y();
+// 			float normalZ = (float)normal.z();
+// 			float vertex1X = (float)p_faces_[i]->p_vertex1()->vertex().x();
+// 			float vertex1Y = (float)p_faces_[i]->p_vertex1()->vertex().y();
+// 			float vertex1Z = (float)p_faces_[i]->p_vertex1()->vertex().z();
+// 			float vertex2X = (float)p_faces_[i]->p_vertex2()->vertex().x();
+// 			float vertex2Y = (float)p_faces_[i]->p_vertex2()->vertex().y();
+// 			float vertex2Z = (float)p_faces_[i]->p_vertex2()->vertex().z();
+// 			float vertex3X = (float)p_faces_[i]->p_vertex3()->vertex().x();
+// 			float vertex3Y = (float)p_faces_[i]->p_vertex3()->vertex().y();
+// 			float vertex3Z = (float)p_faces_[i]->p_vertex3()->vertex().z();
+
+// 			file.write((char *)&normalX, 4);
+// 			file.write((char *)&normalY, 4);
+// 			file.write((char *)&normalZ, 4);
+// 			file.write((char *)&vertex1X, 4);
+// 			file.write((char *)&vertex1Y, 4);
+// 			file.write((char *)&vertex1Z, 4);
+// 			file.write((char *)&vertex2X, 4);
+// 			file.write((char *)&vertex2Y, 4);
+// 			file.write((char *)&vertex2Z, 4);
+// 			file.write((char *)&vertex3X, 4);
+// 			file.write((char *)&vertex3Y, 4);
+// 			file.write((char *)&vertex3Z, 4);
+// 			file.write((char *)&twoByte, 2);
+// 		}
+
+// 		file.close();
+// 	}else {
+// 		writeLog(ERROR, "unable to open file %s [errno: %d]", stlFilePath.c_str(), strerror(errno));
+// 	}
+// }
 
 const vector<shared_ptr<MeshVertex>> & Mesh::p_vertices() const {
     return p_vertices_;
@@ -171,49 +87,126 @@ const vector<shared_ptr<MeshFace>> & Mesh::p_faces() const {
     return p_faces_;
 }
 
-std::vector<Polygon> Mesh::planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin) const {
-    vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>> faceIntersections;
+void Mesh::addVertex(shared_ptr<MeshVertex> vertex) {
+    p_vertices_.push_back(vertex);
+}
+
+/**
+ * Adds a face to the vector of faces in the mesh
+ *
+ * @param face A pointer to the MeshFace to add
+ */
+void Mesh::addFace(shared_ptr<MeshFace> face) {
+    p_faces_.push_back(face);
+}
+
+struct TripleP_MeshVertexHash {
+    std::size_t operator()(const std::shared_ptr<MeshVertex> & v1, const std::shared_ptr<MeshVertex> & v2, const std::shared_ptr<MeshVertex> & v3) const {
+        return std::hash<std::shared_ptr<MeshVertex>>()(v1) ^ std::hash<std::shared_ptr<MeshVertex>>()(v2) ^ std::hash<std::shared_ptr<MeshVertex>>()(v3);
+    }
+};
+
+vector<Island> Mesh::planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin, vector<shared_ptr<const MeshFace>> p_faces) const {
+    //TODO handle faces that lie entirely on plane
+    vector<Island> islands;
+    vector<shared_ptr<const MeshFace>> p_intersectingFaces;
     
-    //find all intersections with plane
-    for (vector<shared_ptr<MeshFace>>::const_iterator it = p_faces_.begin(); it != p_faces().end(); it++) {
-        shared_ptr<MeshFace> p_face = *it;
-        if (p_face->intersectsPlane(planeNormal, planeOrigin)) {
-            //TODO check for face lying entirely on plane
-            faceIntersections.push_back(pair<pair<Vector3D, Vector3D>, shared_ptr<MeshFace>>(p_face->planeIntersection(planeNormal, planeOrigin), *it));
+    //unordered_map<tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>, shared_ptr<MeshFace>, TripleP_MeshVertexHash> p_checkedFaces;
+    
+    while (p_faces.size() > 0) {
+        if (!((*p_faces.begin())->intersectsPlane(planeNormal, planeOrigin))) { //face does not intersect plane, remove from list of vertices
+            p_faces.erase(p_faces.begin());
+        } else { //cycle around faces until circle is complete
+            vector<Vector3D> polygonPoints;
+            vector<shared_ptr<const MeshFace>> p_polygonMeshFaces;
+            
+            //TODO determine somehow if polygon is hole inside of other polygon
+            
+            shared_ptr<const MeshFace> p_startFace = *p_faces.begin();
+            shared_ptr<const MeshFace> p_currentFace = p_startFace;
+            shared_ptr<const MeshFace> p_nextFace = nullptr;
+            
+            do {
+                //p_checkedFaces.emplace(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>(p_currentFace->p_vertex(0), p_currentFace->p_vertex(1), p_currentFace->p_vertex(2)), p_currentFace);
+                
+                //add ptr to MeshFace to hashtable of intersection faces
+//                if (!p_intersectingFaces.emplace(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>> (p_currentFace->p_vertex(0), p_currentFace->p_vertex(1), p_currentFace->p_vertex(2)), p_currentFace).second) {
+//                    writeLog(WARNING, "added same face twice to list of faces that intersects with plane");
+//                }
+                
+                //add first point of face intersection to list of polygon points
+                polygonPoints.push_back(p_currentFace->planeIntersection(planeNormal, planeOrigin).first);
+                p_polygonMeshFaces.push_back(p_currentFace);
+                
+                pair<Vector3D, Vector3D> intersectionLine = p_currentFace->planeIntersection(planeNormal, planeOrigin);
+                
+                //determine which edge of face is next
+                if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(0)->vertex_, intersectionLine.second - p_currentFace->p_vertex(1)->vertex_).magnitude() == 0) {
+                    p_nextFace->p_connectedFace(0);
+                } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(1)->vertex_, intersectionLine.second - p_currentFace->p_vertex(2)->vertex_).magnitude() == 0) {
+                    p_nextFace->p_connectedFace(1);
+                } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(2)->vertex_, intersectionLine.second - p_currentFace->p_vertex(0)->vertex_).magnitude() == 0) {
+                    p_nextFace->p_connectedFace(2);
+                }
+                
+                if (!p_nextFace) {
+                    writeLog(ERROR, "connected face to face being sliced is nullptr");
+                    break;
+                }
+            } while (p_nextFace != p_startFace);
+            
+            
         }
     }
     
-    vector<Polygon> polygons;
+    return islands;
     
-    while (faceIntersections.size() > 0) {
-        if (faceIntersections.size() < 3) {
-            writeLog(ERROR, "attempting to create polygon from less than 3 face intersections");
-            break;
-        }
-        
-        vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>> polygonLines;
-        polygonLines.push_back(pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>(faceIntersections[0].first, faceIntersections[0].second));
-        faceIntersections.erase(faceIntersections.begin());
-        
-        Vector3D front = polygonLines[0].first.first;
-        Vector3D back = polygonLines[0].first.second;
-        
-        bool breakWhile = true;
-        while (breakWhile) {
-            breakWhile = true;
-            for (vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>>::iterator it = faceIntersections.begin(); it != faceIntersections.end(); it++) {
-                pair<Vector3D, Vector3D> line = it->first;
-            }
-        }
-    }
+    //    vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>> faceIntersections;
+    //
+    //    //find all intersections with plane
+    //    for (vector<shared_ptr<MeshFace>>::const_iterator it = p_faces_.begin(); it != p_faces().end(); it++) {
+    //        shared_ptr<MeshFace> p_face = *it;
+    //        if (p_face->intersectsPlane(planeNormal, planeOrigin)) {
+    //            //TODO check for face lying entirely on plane
+    //            faceIntersections.push_back(pair<pair<Vector3D, Vector3D>, shared_ptr<MeshFace>>(p_face->planeIntersection(planeNormal, planeOrigin), *it));
+    //        }
+    //    }
+    //
+    //    vector<Polygon> polygons;
+    //
+    //    while (faceIntersections.size() > 0) {
+    //        if (faceIntersections.size() < 3) {
+    //            writeLog(ERROR, "attempting to create polygon from less than 3 face intersections");
+    //            break;
+    //        }
+    //
+    //        vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>> polygonLines;
+    //        polygonLines.push_back(pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>(faceIntersections[0].first, faceIntersections[0].second));
+    //        faceIntersections.erase(faceIntersections.begin());
+    //
+    //        Vector3D front = polygonLines[0].first.first;
+    //        Vector3D back = polygonLines[0].first.second;
+    //
+    //        bool breakWhile = true;
+    //        while (breakWhile) {
+    //            breakWhile = true;
+    //            for (vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>>::iterator it = faceIntersections.begin(); it != faceIntersections.end(); it++) {
+    //                pair<Vector3D, Vector3D> line = it->first;
+    //            }
+    //        }
+    //    }
     
-    return polygons;
+    //return islands;
 }
 
 //MeshVertex class functions
 
 MeshVertex::MeshVertex(const Vector3D & vertex) :
 vertex_(vertex) { }
+
+void MeshVertex::addConnectedFace(shared_ptr<MeshFace> p_face) {
+    p_faces_.push_back(p_face);
+}
 
 Vector3D MeshVertex::vertex() const {
     return vertex_;
@@ -225,18 +218,111 @@ const vector<shared_ptr<const MeshFace>> & MeshVertex::p_faces() const {
 
 //MeshEdge class functions
 
-MeshEdge::MeshEdge(shared_ptr<const MeshVertex> p_vertex1, shared_ptr<const MeshVertex> p_vertex2) :
-p_v1_(p_vertex1),
-p_v2_(p_vertex2) { }
+/**
+ * The MeshEdge constructor accepts the two points representing the edge
+ * as its arguments. It organizes itself into point 1 and point 2, where
+ * point 1 is defined as being the point which has a lesser z-value. If it
+ * has an equal value, point 1 is the lesser y-value, and if those are equal,
+ * the lesser x-value. If the points are equal, MeshEdge throws an invalid_argument
+ * exception.
+ * This makes it possible to create two MeshEdge objects with the same points
+ * but given in any order, and the MeshEdge objects will always be equivalent.
+ *
+ * @params v1 One of the vertices on the edge
+ * @params v2 The other vertex on the edge
+ */
+MeshEdge::MeshEdge(shared_ptr<const MeshVertex> p_v1, shared_ptr<const MeshVertex> p_v2) {
+    // All the points from each vertex
+    double x1 = p_v1->vertex().x();
+    double y1 = p_v1->vertex().y();
+    double z1 = p_v1->vertex().z();
+    
+    double x2 = p_v2->vertex().x();
+    double y2 = p_v2->vertex().y();
+    double z2 = p_v2->vertex().z();
+    
+    // Check to see which is v1 and which is v2
+    if (z1 < z2) {
+        p_vertices_[0] = p_v1;
+        p_vertices_[1] = p_v2;
+    }
+    else if (z2 < z1) {
+        p_vertices_[0] = p_v2;
+        p_vertices_[1] = p_v1;
+    }
+    else if (y1 < y2) {
+        p_vertices_[0] = p_v1;
+        p_vertices_[1] = p_v2;
+    }
+    else if (y2 < y1) {
+        p_vertices_[0] = p_v2;
+        p_vertices_[1] = p_v1;
+    }
+    else if (x1 < x2) {
+        p_vertices_[0] = p_v1;
+        p_vertices_[1] = p_v2;
+    }
+    else if (x2 < x1) {
+        p_vertices_[0] = p_v2;
+        p_vertices_[1] = p_v1;
+    } else {
+        throw invalid_argument("The two vertices being used to create a MeshEdge are the same");
+    }
+    
+    // // Initialize the connected faces to be nullptr
+    // p_faces_[0] = nullptr;
+    // p_faces_[1] = nullptr;
+}
+
+/**
+ * Returns one of the two vertices of the edge. Takes value
+ * 0 or 1 to retrieve the first and second vertex, respectively.
+ * Vertices are ordered based on their lowest z-value, unless z
+ * is equal in which case it uses y-value, down to x-value.
+ *
+ * @param v 0 or 1 depending on which vertex is desired
+ *
+ * @return The vertex with the lowest z-, y-, or x-value
+ */
+const shared_ptr<const MeshVertex> MeshEdge::getVertex(uint16_t v) const {
+    if (v < 0 || v > 1) {
+        writeLog(ERROR, "tried to access vertex %d in a MeshEdge (range 0 to 1)", v);
+        return nullptr;
+    }
+    
+    return p_vertices_[v];
+}
+
+/**
+ * Overrides the == operator and checks to see if the first
+ * and second vectors of the current MeshEdge are equal
+ * to each other.
+ *
+ * @return True if the MeshEdge objects have the same vertex values
+ */
+bool MeshEdge::operator==(const MeshEdge & edge) const {
+    return p_vertices_[0] == edge.getVertex(0) && p_vertices_[1] == edge.getVertex(1);
+}
 
 //MeshFace class functions
 
-MeshFace::MeshFace(shared_ptr<const MeshVertex> p_vertex1, shared_ptr<const MeshVertex> p_vertex2, shared_ptr<const MeshVertex> p_vertex3) :
-p_v1_(p_vertex1),
-p_v2_(p_vertex2),
-p_v3_(p_vertex3) {
+/**
+ * Builds a MeshFace from three MeshVertex objects. It is assumed that the MeshVertex
+ * objects are given in counter-clockwise order, such that the normal of the
+ * MeshFace can be computed using right-hand rule.
+ *
+ * @param v1 The first vertex
+ * @param v2 The second vertex, counter-clockwise from the first
+ * @param v3 The third and final vertex
+ */
+MeshFace::MeshFace(shared_ptr<const MeshVertex> v1, shared_ptr<const MeshVertex> v2, shared_ptr<const MeshVertex> v3) {
+    // Set the vertices array
+    p_vertices_[0] = v1;
+    p_vertices_[1] = v2;
+    p_vertices_[2] = v3;
+    
     //take cross product of (y - z) and (y - z)
-    Vector3D normalUnnormalized = Vector3D::crossProduct(p_vertex2->vertex() - p_vertex1->vertex(), p_vertex3->vertex() - p_vertex1->vertex());
+    Vector3D normalUnnormalized = Vector3D::crossProduct(p_vertices_[1]->vertex() - p_vertices_[0]->vertex(), p_vertices_[2]->vertex() - p_vertices_[0]->vertex());
     //area is equal to half the magnitude of a cross product
     area_ = normalUnnormalized.magnitude() / 2;
     //normalize normal
@@ -244,39 +330,100 @@ p_v3_(p_vertex3) {
     normal_.normalize();
 }
 
-shared_ptr<const MeshVertex> MeshFace::p_vertex1() const {
-    return p_v1_;
+/**
+ * Overrides the == operator and checks to see if the three vertices
+ * of the first MeshFace are equal in value to the three vertices
+ * on the given MeshFace.
+ *
+ * @return True if the MeshFace objects have the same vertex values
+ */
+bool MeshFace::operator==(const MeshFace & face) const {
+    return p_vertices_[0] == face.p_vertex(0) && p_vertices_[1] == face.p_vertex(1) && p_vertices_[2] == face.p_vertex(2);
 }
 
-shared_ptr<const MeshVertex> MeshFace::p_vertex2() const {
-    return p_v2_;
-}
-
-shared_ptr<const MeshVertex> MeshFace::p_vertex3() const {
-    return p_v3_;
-}
-
-shared_ptr<const MeshFace> MeshFace::p_face12() const {
-    return p_face12_;
-}
-
-shared_ptr<const MeshFace> MeshFace::p_face23() const {
-    return p_face23_;
-}
-
-shared_ptr<const MeshFace> MeshFace::p_face31() const {
-    return p_face31_;
-}
-
-Vector3D MeshFace::p_normal(){
-	return normal_;
-}
-
-bool MeshFace::intersectsPlane(const Vector3D & planeNormal, const Vector3D & planeOrigin) const {
-    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - planeOrigin);
-    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - planeOrigin);
-    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - planeOrigin);
+/**
+ * Retrieves one of the 3 vertices of the face. Accepts a
+ * 16-bit int between 0 and 2 inclusive. Vertices are
+ * ordered counter-clockwise, so 0 -> 1 -> 2 -> 0 is
+ * a counter-clockwise path around the face.
+ * A nullptr is returned if an invalid vertex value
+ * is requested.
+ *
+ * @param v The vertex to retrieve (0, 1, or 2)
+ *
+ * @return The requested MeshVertex pointer
+ */
+const shared_ptr<const MeshVertex> MeshFace::p_vertex(uint16_t v) const {
+    if (v < 0 || v > 2) {
+        writeLog(ERROR, "tried to access vertex %d in triangle (range 0-2)", v);
+        return nullptr;
+    }
     
+    return p_vertices_[v];
+}
+
+/**
+ * Retrieves one of the 3 vertices of the face. The enum values
+ * FIRST, SECOND, and THIRD are provided, which follow the
+ * right-hand rule.
+ *
+ * @param f The face to retrieve (0, 1, or 2)
+ *
+ * @return The requested MeshFace pointer
+ */
+const shared_ptr<const MeshFace> MeshFace::p_connectedFace(uint16_t f) const {
+    return p_faces_[f];
+}
+
+/**
+ * Takes a face and adds it to this face at the index specified by the second
+ * parameter. If an invalid edge index is given, this function does nothing.
+ *
+ * @param connectingFace The MeshFace to connect
+ * @param edgeIndex Value between 0 and 2 specifying which edge the face to connect to is on
+ */
+void MeshFace::connect(shared_ptr<MeshFace> connectingFace, uint16_t edgeIndex) {
+    // Write warning and return if invalid edgeIndex
+    if (edgeIndex < 0 || edgeIndex > 2) {
+        writeLog(WARNING, "tried to connect a face to edge index %d (range 0 to 2)", edgeIndex);
+        return;
+    }
+    
+    // Add this face to the given face's list of connected faces
+    p_faces_[edgeIndex] = connectingFace;
+}
+
+/**
+ * Takes in 2 vertices and returns the index of the edge on the face
+ *
+ * @param edgeVertices[] An array of 2 vertices on the face
+ *
+ * @return A signed int between 0 and 2 if valid edge vertices, -1 if invalid
+ */
+int16_t MeshFace::getEdgeIndex(shared_ptr<MeshEdge> p_edge) {
+    // Find the index the given face belongs in according to edge order,
+    // and then add the given face to this face's list of connected faces
+    for (uint16_t i = 0; i < 3; ++i) {
+        shared_ptr<const MeshVertex> thisVert1 = p_vertices_[i];
+        shared_ptr<const MeshVertex> thisVert2 = p_vertices_[(i + 1) % 3];
+        
+        uint16_t numMatchVertices = (p_edge->getVertex(0) == thisVert1) +\
+        (p_edge->getVertex(1) == thisVert1) +\
+        (p_edge->getVertex(0) == thisVert2) +\
+        (p_edge->getVertex(1) == thisVert2);
+        
+        if (numMatchVertices == 2) {
+            return i;
+        }
+    }
+    
+    return -1;
+}
+
+bool MeshFace::intersectsPlane(const Vector3D & planeNormal, const Vector3D & pointOnPlane) const {
+    double v1Val = Vector3D::dotProduct(planeNormal, p_vertices_[0]->vertex() - pointOnPlane);
+    double v2Val = Vector3D::dotProduct(planeNormal, p_vertices_[1]->vertex() - pointOnPlane);
+    double v3Val = Vector3D::dotProduct(planeNormal, p_vertices_[2]->vertex() - pointOnPlane);
     if ((v1Val == 0) || (v2Val == 0) || (v3Val == 0)) { //if any point lies exactly on plane, face intersects
         return true;
     } else if ((v1Val < 0) && (v2Val < 0) && (v3Val < 0)) { //if all points lie below plane, face does not intersect
@@ -288,10 +435,14 @@ bool MeshFace::intersectsPlane(const Vector3D & planeNormal, const Vector3D & pl
     }
 }
 
-bool MeshFace::liesOnPlane(const Vector3D & planeNormal, const Vector3D & planeOrigin) const {
-    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - planeOrigin);
-    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - planeOrigin);
-    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - planeOrigin);
+Vector3D MeshFace::p_normal(){
+    return normal_;
+}
+
+bool MeshFace::liesOnPlane(const Vector3D& planeNormal, const Vector3D& pointOnPlane) const {
+    double v1Val = Vector3D::dotProduct(planeNormal, p_vertices_[0]->vertex() - pointOnPlane);
+    double v2Val = Vector3D::dotProduct(planeNormal, p_vertices_[1]->vertex() - pointOnPlane);
+    double v3Val = Vector3D::dotProduct(planeNormal, p_vertices_[2]->vertex() - pointOnPlane);
     
     if ((v1Val == 0) && (v2Val == 0) && (v3Val == 0)) { //if every point lies exactly on plane
         return true;
@@ -310,18 +461,18 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNorma
         return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
     }
     
-    double v1Val = Vector3D::dotProduct(planeNormal, p_v1_->vertex() - planeOrigin);
-    double v2Val = Vector3D::dotProduct(planeNormal, p_v2_->vertex() - planeOrigin);
-    double v3Val = Vector3D::dotProduct(planeNormal, p_v3_->vertex() - planeOrigin);
+    double v1Val = Vector3D::dotProduct(planeNormal, p_vertices_[0]->vertex() - planeOrigin);
+    double v2Val = Vector3D::dotProduct(planeNormal, p_vertices_[1]->vertex() - planeOrigin);
+    double v3Val = Vector3D::dotProduct(planeNormal, p_vertices_[2]->vertex() - planeOrigin);
     
     //if two vertices lie of plane, return edge between vertices
     //TODO determine which order vertices should be placed in pair
     if ((v1Val == 0) && (v2Val == 0)) {
-        return pair<Vector3D, Vector3D>(p_v1_->vertex(), p_v2_->vertex());
+        return pair<Vector3D, Vector3D>(p_vertex(0)->vertex(), p_vertex(1)->vertex());
     } else if ((v1Val == 0) && (v3Val == 0)) {
-        return pair<Vector3D, Vector3D>(p_v1_->vertex(), p_v3_->vertex());
+        return pair<Vector3D, Vector3D>(p_vertex(0)->vertex(), p_vertex(2)->vertex());
     } else if ((v2Val == 0) && (v3Val == 0)) {
-        return pair<Vector3D, Vector3D>(p_v2_->vertex(), p_v3_->vertex());
+        return pair<Vector3D, Vector3D>(p_vertex(1)->vertex(), p_vertex(2)->vertex());
     }
     
     //using method described in stackoverflow post: http://math.stackexchange.com/questions/100439/determine-where-a-vector-will-intersect-a-plane
@@ -329,17 +480,17 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNorma
     Vector3D p0, p1, p2; //p0 is on opposite side of plane as p1 and p2
     //set p0 to whichever vertex is on opposite side as other vertices
     if (((v1Val <= 0) && (v2Val > 0) && (v3Val > 0)) || ((v1Val >= 0) && (v2Val < 0) && (v3Val < 0))) { //v1 is on side by itself
-        p0 = p_v1_->vertex();
-        p1 = p_v2_->vertex();
-        p2 = p_v3_->vertex();
+        p0 = p_vertex(0)->vertex();
+        p1 = p_vertex(1)->vertex();
+        p2 = p_vertex(2)->vertex();
     } else if (((v2Val <= 0) && (v1Val > 0) && (v3Val > 0)) || ((v2Val >= 0) && (v1Val < 0) && (v3Val < 0))) { //v2 is on side by itself
-        p0 = p_v2_->vertex();
-        p1 = p_v1_->vertex();
-        p2 = p_v3_->vertex();
+        p0 = p_vertex(1)->vertex();
+        p1 = p_vertex(0)->vertex();
+        p2 = p_vertex(2)->vertex();
     } else if (((v3Val <= 0) && (v1Val > 0) && (v2Val > 0)) || ((v3Val >= 0) && (v1Val < 0) && (v2Val < 0))) { //v3 is on side by itself
-        p0 = p_v3_->vertex();
-        p1 = p_v1_->vertex();
-        p2 = p_v2_->vertex();
+        p0 = p_vertex(2)->vertex();
+        p1 = p_vertex(0)->vertex();
+        p2 = p_vertex(1)->vertex();
     }
     
     Vector3D p01 = p1 - p0;

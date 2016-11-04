@@ -12,85 +12,115 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <string>
 
 #include "Vector3D.hpp"
 #include "Polygon.hpp"
+#include "Island.hpp"
 
 namespace mapmqp {
     //forward declarations to use pointers
     class MeshVertex;
     class MeshFace;
     
+    // Mesh class declaration
+
     class Mesh {
     public:
         Mesh();
-		
-		void constructSTLFromMesh(std::string stlFilePath);
-        void constructMeshFromSTL(std::string stlFilePath);
         
         const std::vector<std::shared_ptr<MeshVertex>> & p_vertices() const;
         const std::vector<std::shared_ptr<MeshFace>> & p_faces() const;
+
+        void addVertex(std::shared_ptr<MeshVertex> p_vertex);
+        void addFace(std::shared_ptr<MeshFace> p_face);
         
-        std::vector<Polygon> planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin) const;
+        std::vector<Island> planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin, std::vector<std::shared_ptr<const MeshFace>> p_faces) const;
         
     private:
+        
         std::vector<std::shared_ptr<MeshVertex>> p_vertices_;
         std::vector<std::shared_ptr<MeshFace>> p_faces_;
         
         std::vector<std::shared_ptr<MeshVertex>> p_lowestVertices_;
     };
+
+    // MeshVertex class declaration
     
     class MeshVertex {
         friend class Mesh;
     public:
         MeshVertex(const Vector3D & vertex);
         
-        //getters
+        // Getters
         Vector3D vertex() const;
         const std::vector<std::shared_ptr<const MeshFace>> & p_faces() const;
+
+        // Adds a face to the vector of connected faces
+        void addConnectedFace(std::shared_ptr<MeshFace> p_face);
         
     private:
         Vector3D vertex_;
         std::vector<std::shared_ptr<const MeshFace>> p_faces_; //all faces that have this vertex as a vertex
     };
+
+    // MeshEdge class declaration
     
     class MeshEdge {
         friend class Mesh;
     public:
         MeshEdge(std::shared_ptr<const MeshVertex> p_vertex1, std::shared_ptr<const MeshVertex> p_vertex2);
+
+        void addFace(std::shared_ptr<MeshFace> p_face);
+        void other(std::shared_ptr<MeshVertex> p_vertex);
+        void other(std::shared_ptr<MeshFace> p_face);
+
+        // Getters
+        const std::shared_ptr<const MeshVertex> getVertex(uint16_t v) const;
+
+        // Operator overloads
+        bool operator==(const MeshEdge & edge) const;
         
     private:
-        std::shared_ptr<const MeshVertex> p_v1_ = nullptr, p_v2_ = nullptr;
+        bool faceAdded = false;
+        std::shared_ptr<const MeshVertex> p_vertices_[2];
     };
     
     class MeshFace {
         friend class Mesh;
     public:
         MeshFace(std::shared_ptr<const MeshVertex> p_vertex1, std::shared_ptr<const MeshVertex> p_vertex2, std::shared_ptr<const MeshVertex> p_vertex3); //TODO add normal checking
+
+        // Getters
+        const std::shared_ptr<const MeshVertex> p_vertex(uint16_t v) const;
+        const std::shared_ptr<const MeshFace> p_connectedFace(uint16_t f) const;
+        Vector3D p_normal();
         
-        //getters
-        std::shared_ptr<const MeshVertex> p_vertex1() const;
-        std::shared_ptr<const MeshVertex> p_vertex2() const;
-        std::shared_ptr<const MeshVertex> p_vertex3() const;
-        std::shared_ptr<const MeshFace> p_face12() const;
-        std::shared_ptr<const MeshFace> p_face23() const;
-        std::shared_ptr<const MeshFace> p_face31() const;
-		Vector3D p_normal();
-        
-        //returns whether or not the face intersections with a plane with a normal of planeNormal and contains the coordinate pointOnPoint
+        //returns whether or not the face intersections with a plane with a normal of planeNormal and contains the coordinate planeOrigin
         bool intersectsPlane(const Vector3D & planeNormal, const Vector3D & planeOrigin) const;
         
-        //returns whether or not the entire face lays is on a plane with a normal of planeNormal and contains the coordinate pointOnPoint (that is, all vertices of face lie on the plane)
+        //returns whether or not the entire face lays is on a plane with a normal of planeNormal and contains the coordinate planeOrigin (that is, all vertices of face lie on the plane)
         bool liesOnPlane(const Vector3D & planeNormal, const Vector3D & planeOrigin) const;
-        
-        //if the face intersections with a plane with a normal of planeNormal and contains the coordinate pointOnPoint and does not lie entirely on the plane, returns the line of intersection between the face and the plane
+
+        //if the face intersections with a plane with a normal of planeNormal and contains the coordinate planeOrigin and does not lie entirely on the plane, returns the line of intersection between the face and the plane, pair.first->pair.second is going counterclockwise
         std::pair<Vector3D, Vector3D> planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin) const;
+
+        // Add a connecting face to this face
+        void connect(std::shared_ptr<MeshFace> p_face, uint16_t edgeIndex);
+
+        // Get the edge index of the two given vertices
+        int16_t getEdgeIndex(std::shared_ptr<MeshEdge> p_edge);
+
+        // Operator overloads
+        bool operator==(const MeshFace & face) const;
         
     private:
         //x, y, z vertices in counter-clockwise order
-        std::shared_ptr<const MeshVertex> p_v1_ = nullptr, p_v2_ = nullptr, p_v3_ = nullptr;
+        std::shared_ptr<const MeshVertex> p_vertices_[3];
+
         //faces that share the x/y, y/z, and z/x edges
-        std::shared_ptr<const MeshFace> p_face12_ = nullptr, p_face23_ = nullptr, p_face31_ = nullptr;
+        std::shared_ptr<const MeshFace> p_faces_[3];
         
         double area_;
         Vector3D normal_;
