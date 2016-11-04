@@ -15,10 +15,10 @@ ProcessSTL::ProcessSTL(string stlFilePath) : p_mesh_(new Mesh()) {
  *
  * @return True if success, false otherwise
  */
-bool ProcessSTL::run() {
+shared_ptr<Mesh> ProcessSTL::run() {
 	constructMeshFromSTL();
 
-	return true;
+	return p_mesh_;
 }
 
 /**
@@ -65,7 +65,7 @@ shared_ptr<MeshVertex> ProcessSTL::addMeshVertex(shared_ptr<MeshVertex> p_vertex
  */
 void ProcessSTL::addMeshFace(shared_ptr<MeshFace> p_face) {
 	// Gather vertices and create edges
-	std::shared_ptr<const MeshVertex> p_vert1 = p_face->p_vertex(0);
+    std::shared_ptr<const MeshVertex> p_vert1 = p_face->p_vertex(0);
 	std::shared_ptr<const MeshVertex> p_vert2 = p_face->p_vertex(1);
 	std::shared_ptr<const MeshVertex> p_vert3 = p_face->p_vertex(2);
 	std::shared_ptr<MeshEdge> p_edge1(new MeshEdge(p_vert1, p_vert2));
@@ -83,6 +83,8 @@ void ProcessSTL::addMeshFace(shared_ptr<MeshFace> p_face) {
 
 		// Get whether the MeshFace was added
 		bool faceWasAdded = emplacePair.second;
+
+		printf("e1v1 = %s, e1v2 = %s\n", hashedEdge->getVertex(0)->vertex().toString().c_str(), hashedEdge->getVertex(1)->vertex().toString().c_str());
 
 		// If there was already a face at the edge, do some error checking and connect them
 		if (!faceWasAdded) {
@@ -102,6 +104,7 @@ void ProcessSTL::addMeshFace(shared_ptr<MeshFace> p_face) {
 				writeLog(ERROR, "edge hashed to a face but face did not have that edge, removed face from the hash for that edge");
 				return;
 			}
+            
 			hashedFace->connect(p_face, hashedFace->getEdgeIndex(hashedEdge));
 
 			p_face->connect(hashedFace, i);
@@ -125,15 +128,19 @@ void ProcessSTL::constructMeshFromSTL() {
         file.read(header, 80);							// Get the header
         file.read((char*)&size, 4);						// Get the number of triangles
 
+        writeLog(INFO, "Number of triangles: %d", size);
+
         double lowestZVal = INFINITY;
         
         for (unsigned int i = 0; i < size; ++i) {		// Loop through all triangles
+        	// writeLog(INFO, "Triangle being parsed: %d", i);
             Vector3D norm, vertices[3];                 // Stores the three triangle points + normal vector
             float points[12] = { };						// 4 vectors * 3 points = 12 points
             short abc;									// Stores the attribute byte count
             
             for (unsigned int j = 0; j < 12; ++j) {		// Get all points from file
                 file.read((char*)(points + j), 4);
+                points[j] = floor((points[j] * 1000) + 0.5);
             }
             file.read((char*)&abc, 2);
             
@@ -141,6 +148,8 @@ void ProcessSTL::constructMeshFromSTL() {
             vertices[0] = Vector3D(points[3], points[4], points[5]);	// Get first point of triangle
             vertices[1] = Vector3D(points[6], points[7], points[8]);	// Get second point of triangle
             vertices[2] = Vector3D(points[9], points[10], points[11]);	// Get third point of triangle
+
+            // writeLog(INFO, "Triangle vertices are:\n\t[%f,%f,%f], [%f, %f, %f], [%f, %f, %f]", vertices[0].x(), vertices[0].y(), vertices[0].z(), vertices[1].x(), vertices[1].y(), vertices[1].z(), vertices[2].x(), vertices[2].y(), vertices[2].z());
             
             shared_ptr<MeshVertex> p_meshVertices[3]; //Three MeshVertex pointers
             

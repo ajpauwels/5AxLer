@@ -10,6 +10,7 @@
 #define Vector3D_hpp
 
 #include "Angle.hpp"
+#include <string>
 
 namespace mapmqp {
     class Vector3D {
@@ -50,6 +51,8 @@ namespace mapmqp {
         
         bool operator==(const Vector3D & v) const; //calls equals function
         bool operator!=(const Vector3D & v) const;
+
+        std::string toString() const;
         
     private:
         double x_, y_, z_;
