@@ -15,10 +15,10 @@ ProcessSTL::ProcessSTL(string stlFile) : p_mesh_(new Mesh()) {
  *
  * @return True if success, false otherwise
  */
-bool ProcessSTL::run() {
+shared_ptr<Mesh> ProcessSTL::run() {
 	constructMeshFromSTL();
 
-	return true;
+	return p_mesh_;
 }
 
 /**
@@ -71,11 +71,15 @@ void ProcessSTL::addMeshFace(shared_ptr<MeshFace> face) {
 	std::shared_ptr<MeshEdge> edge1(new MeshEdge(p_vert1, p_vert2));
 	std::shared_ptr<MeshEdge> edge2(new MeshEdge(p_vert2, p_vert3));
 	std::shared_ptr<MeshEdge> edge3(new MeshEdge(p_vert3, p_vert1));
+	std::shared_ptr<MeshEdge> edges[3] = {edge1, edge2, edge3};
 
 	// Check each edge against the map of edges
 	for (unsigned int i = 0; i < 3; ++i) {
 		// Hash the MeshEdge to the map of edges
-		pair<unordered_map<shared_ptr<MeshEdge>, shared_ptr<MeshFace>, MeshEdgeHash>::iterator, bool> emplacePair = mappedEdges_.emplace(edge1, face);
+		// printf("edge[%d] = [%f, %f, %f], [%f, %f, %f]\n", i, edges[i]->getVertex(0)->vertex().x(), edges[i]->getVertex(0)->vertex().y(), edges[i]->getVertex(0)->vertex().z(), edges[i]->getVertex(1)->vertex().x(), edges[i]->getVertex(1)->vertex().y(), edges[i]->getVertex(1)->vertex().z());
+		// MeshEdgePtrHash meh;
+		// printf("edge[%d] = %ld", i, meh(edges[i]));
+		pair<unordered_map<shared_ptr<MeshEdge>, shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality>::iterator, bool> emplacePair = mappedEdges_.emplace(edges[i], face);
 
 		// Get the resulting MeshEdge and MeshFace from the hash
 		shared_ptr<MeshEdge> hashedEdge = emplacePair.first->first;
@@ -83,6 +87,8 @@ void ProcessSTL::addMeshFace(shared_ptr<MeshFace> face) {
 
 		// Get whether the MeshFace was added
 		bool faceWasAdded = emplacePair.second;
+
+		printf("e1v1 = %s, e1v2 = %s\n", hashedEdge->getVertex(0)->vertex().toString().c_str(), hashedEdge->getVertex(1)->vertex().toString().c_str());
 
 		// If there was already a face at the edge, do some error checking and connect them
 		if (!faceWasAdded) {
@@ -102,7 +108,7 @@ void ProcessSTL::addMeshFace(shared_ptr<MeshFace> face) {
 				writeLog(ERROR, "edge hashed to a face but face did not have that edge, removed face from the hash for that edge");
 				return;
 			}
-			hashedFace->connect(face, hashedFace->getEdgeIndex(hashedEdge));
+			hashedFace->connect(face, hashedFaceEdgeIndex);
 
 			face->connect(hashedFace, i);
 
@@ -125,15 +131,19 @@ void ProcessSTL::constructMeshFromSTL() {
         file.read(header, 80);							// Get the header
         file.read((char*)&size, 4);						// Get the number of triangles
 
+        writeLog(INFO, "Number of triangles: %d", size);
+
         double lowestZVal = INFINITY;
         
         for (unsigned int i = 0; i < size; ++i) {		// Loop through all triangles
+        	// writeLog(INFO, "Triangle being parsed: %d", i);
             Vector3D norm, vertices[3];                 // Stores the three triangle points + normal vector
             float points[12] = { };						// 4 vectors * 3 points = 12 points
             short abc;									// Stores the attribute byte count
             
             for (unsigned int j = 0; j < 12; ++j) {		// Get all points from file
                 file.read((char*)(points + j), 4);
+                points[j] = floor((points[j] * 1000) + 0.5);
             }
             file.read((char*)&abc, 2);
             
@@ -141,6 +151,8 @@ void ProcessSTL::constructMeshFromSTL() {
             vertices[0] = Vector3D(points[3], points[4], points[5]);	// Get first point of triangle
             vertices[1] = Vector3D(points[6], points[7], points[8]);	// Get second point of triangle
             vertices[2] = Vector3D(points[9], points[10], points[11]);	// Get third point of triangle
+
+            // writeLog(INFO, "Triangle vertices are:\n\t[%f,%f,%f], [%f, %f, %f], [%f, %f, %f]", vertices[0].x(), vertices[0].y(), vertices[0].z(), vertices[1].x(), vertices[1].y(), vertices[1].z(), vertices[2].x(), vertices[2].y(), vertices[2].z());
             
             shared_ptr<MeshVertex> p_meshVertices[3]; //Three MeshVertex pointers
             

@@ -9,6 +9,8 @@
 #include "Vector3D.hpp"
 
 #include <cmath>
+#include <iostream>
+#include <sstream>
 
 #include "Utility.hpp"
 
@@ -107,6 +109,7 @@ void Vector3D::faultTolerance(double faultTolerance) {
 
 bool Vector3D::equals(const Vector3D & v, double faultTolerance) const {
     Vector3D dV = v - *this;
+
     return (fabs(dV.magnitude()) <= faultTolerance);
 }
 
@@ -123,7 +126,7 @@ Vector3D Vector3D::operator+(const Vector3D & v) const {
 }
 
 Vector3D Vector3D::operator-(const Vector3D & v) const {
-    return Vector3D(x_ - v.x_, y_ - v.y_, z_ - v.z_);
+    return Vector3D(x_ - v.x(), y_ - v.y(), z_ - v.z());
 }
 
 Vector3D Vector3D::operator*(const double & scale) const {
@@ -140,4 +143,10 @@ bool Vector3D::operator==(const Vector3D & v) const {
 
 bool Vector3D::operator!=(const Vector3D & v) const {
     return !(*this == v);
+}
+
+std::string Vector3D::toString() const {
+    std::ostringstream stream;
+    stream << "[" << x_ << ", " << y_ << ", " << z_ << "]";
+    return stream.str();
 }

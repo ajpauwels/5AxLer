@@ -169,10 +169,6 @@ MeshEdge::MeshEdge(shared_ptr<const MeshVertex> v1, shared_ptr<const MeshVertex>
     } else {
         throw std::invalid_argument("The two vertices being used to create a MeshEdge are the same");
     }
-
-    // // Initialize the connected faces to be nullptr
-    // p_faces_[0] = nullptr;
-    // p_faces_[1] = nullptr;
 }
 
 /**
@@ -202,7 +198,7 @@ const std::shared_ptr<const MeshVertex> MeshEdge::getVertex(uint16_t v) const {
  * @return True if the MeshEdge objects have the same vertex values
  */
 bool MeshEdge::operator==(const MeshEdge & edge) const {
-    return p_vertices_[0] == edge.getVertex(0) && p_vertices_[1] == edge.getVertex(1);
+    return p_vertices_[0]->vertex() == edge.getVertex(0)->vertex() && p_vertices_[1]->vertex() == edge.getVertex(1)->vertex();
 }
 
 //MeshFace class functions
@@ -255,7 +251,7 @@ bool MeshFace::operator==(const MeshFace & face) const {
  * @return The requested MeshVertex pointer
  */
 const shared_ptr<const MeshVertex> MeshFace::getVertex(uint16_t v) const {
-    if (v < 0 && v > 2) {
+    if (v < 0 || v > 2) {
         writeLog(ERROR, "tried to access vertex %d in triangle (range 0-2)", v);
         return nullptr;
     }
@@ -273,6 +269,11 @@ const shared_ptr<const MeshVertex> MeshFace::getVertex(uint16_t v) const {
  * @return The requested MeshFace pointer
  */
 const shared_ptr<const MeshFace> MeshFace::getConnectedFace(uint16_t f) const {
+    if (f < 0 || f > 2) {
+        writeLog(ERROR, "tried to access face %d in triangle (range 0-2)", f);
+        return nullptr;
+    }
+
     return p_faces_[f];
 }
 
@@ -320,12 +321,12 @@ int16_t MeshFace::getEdgeIndex(std::shared_ptr<MeshEdge> edge) {
     // and then add the given face to this face's list of connected faces
     for (uint16_t i = 0; i < 3; ++i) {
         shared_ptr<const MeshVertex> thisVert1 = p_vertices_[i];
-        shared_ptr<const MeshVertex> thisVert2 = p_vertices_[nextCircularIndex(i)];
+        shared_ptr<const MeshVertex> thisVert2 = p_vertices_[(i + 1) % 3];
 
-        uint16_t numMatchVertices = (edge->getVertex(0) == thisVert1) +\
-        (edge->getVertex(1) == thisVert1) +\
-        (edge->getVertex(0) == thisVert2) +\
-        (edge->getVertex(1) == thisVert2);
+        uint16_t numMatchVertices = (edge->getVertex(0)->vertex() == thisVert1->vertex()) +\
+        (edge->getVertex(1)->vertex() == thisVert1->vertex()) +\
+        (edge->getVertex(0)->vertex() == thisVert2->vertex()) +\
+        (edge->getVertex(1)->vertex() == thisVert2->vertex());
 
         if (numMatchVertices == 2) {
             return i;

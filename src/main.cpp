@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "Mesh.hpp"
 #include "Utility.hpp"
@@ -25,6 +26,8 @@
 #include <unordered_map>
 #include <string>
 //end debugging
+
+using namespace mapmqp;
 
 int main(int argc, const char * argv[]) {
     // insert code here...
@@ -46,8 +49,39 @@ int main(int argc, const char * argv[]) {
     
 //     mapmqp::Mesh mesh;
 
+    // Vector3D v1(Vector3D(0, 0, 0));
+    // Vector3D v2(Vector3D(10, 10, 10));
+    // Vector3D v3(Vector3D(-10, -10, -10));
+    // Vector3D v4(Vector3D(2, 4, -10));
+    // Vector3D v5(Vector3D(2, 4, -10));
+
+    // writeLog(INFO, "v4 == v4 : %d", v4 == v5);
+
     /* testing ProcessSTL */
-    mapmqp::ProcessSTL parser(argv[0]);
+    mapmqp::ProcessSTL parser(argv[1]);
+    std::shared_ptr<mapmqp::Mesh> mesh = parser.run();
+    const std::vector<std::shared_ptr<mapmqp::MeshFace>> meshFaces = mesh->faces();
+    for (uint32_t i = 0; i < meshFaces.size(); ++i) {
+        const std::shared_ptr<mapmqp::MeshFace> currFace = meshFaces[i];
+
+        printf("Face vertices are:\n");
+        for (uint16_t j = 0; j < 3; ++j) {
+            printf("\t[%f, %f, %f]", currFace->getVertex(j)->vertex().x(), currFace->getVertex(j)->vertex().y(), currFace->getVertex(j)->vertex().z());
+        }
+        printf("\n");
+        printf("Connected faces are:\n");
+        for (uint16_t j = 0; j < 3; ++j) {
+            printf("%d.)", j);
+            const std::shared_ptr<const mapmqp::MeshFace> connFace = currFace->getConnectedFace(j);
+            for (uint16_t k = 0; k < 3; ++k) {
+                printf("\t[%f, %f, %f]", connFace->getVertex(k)->vertex().x(), connFace->getVertex(k)->vertex().y(), connFace->getVertex(k)->vertex().z());
+            }
+            printf("\n");
+        }
+        printf("\n");
+
+    }
+
 
     /*
     //testing build map

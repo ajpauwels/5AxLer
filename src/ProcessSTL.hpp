@@ -16,7 +16,7 @@ namespace mapmqp {
 	class ProcessSTL {
 	public:
 		ProcessSTL(std::string stlFiles);
-		bool run();
+		std::shared_ptr<Mesh> run();
 
 	private:
 		/**
@@ -38,21 +38,27 @@ namespace mapmqp {
 		/**
 		 * Creates a hash value for a MeshEdge object using its vertices
 		 */
-		struct MeshEdgeHash {
+		struct MeshEdgePtrHash {
 		    std::size_t operator()(const std::shared_ptr<MeshEdge> & me) const {
 		        Vector3DHash v3hasher;
 
 		        int hash = 17;
 		        hash = hash * 31 + v3hasher(me->getVertex(0)->vertex());
-		        hash = hash * 31 + v3hasher(me->getVertex(0)->vertex());
+		        hash = hash * 31 + v3hasher(me->getVertex(1)->vertex());
 		        return std::hash<int>()(hash);
+		    }
+		};
+
+		struct MeshEdgePtrEquality {
+		    bool operator()(const std::shared_ptr<MeshEdge> & edge1, const std::shared_ptr<MeshEdge> & edge2) const {
+		        return *edge1 == *edge2;
 		    }
 		};
 
 		std::shared_ptr<Mesh> p_mesh_;
 		std::string stlFile_;
 		std::unordered_map<Vector3D, std::shared_ptr<MeshVertex>, Vector3DHash> mappedVertices_;
-        std::unordered_map<std::shared_ptr<MeshEdge>, std::shared_ptr<MeshFace>, MeshEdgeHash> mappedEdges_;
+        std::unordered_map<std::shared_ptr<MeshEdge>, std::shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality> mappedEdges_;
         std::vector<std::shared_ptr<MeshVertex>> lowestVertices_;
 
 		bool getFileHandler(std::ifstream& file);
