@@ -11,8 +11,10 @@
 
 #include <vector>
 
-#include "Vector3D.hpp"
 #include "../libs/clipper/clipper.hpp"
+
+#include "Vector3D.hpp"
+#include "Plane.hpp"
 
 namespace mapmqp {
     class Polygon {
@@ -21,7 +23,7 @@ namespace mapmqp {
         
         //getters
         const std::vector<Vector3D> & points() const;
-        Vector3D planeNormal() const;
+        const Plane & plane() const;
         
         Polygon mapToXYPlane() const;
         Vector3D mapPointToXYPlane(const Vector3D & point) const;
@@ -32,19 +34,15 @@ namespace mapmqp {
         bool pointInPolygon(const Vector3D & point) const;
         
         //static member's getters/setters
-        static double planeFaultTolerance();
-        static void planeFaultTolerance(double planeFaultTolerance);
         static uint64_t mappedPointPrecision();
         static void mappedPointPrecision(int mappedPointPrecision);
         
     private:
         std::vector<Vector3D> points_; //stored in counter-clockwise form
-        Vector3D planeNormal_; //normal of plane polygon lies on - determined by first three points added
-        Vector3D planeOrigin_; //point on plane closest to (0, 0, 0)
+        Plane plane_;
         Vector3D planeAxisX_, planeAxisY_; //create x and y axes relative to polygon plane
         
         //TODO should these be variables of #defines?
-        static double planeFaultTolerance_; //used for fault tolerance when determining if a point is on polygon plane
         static uint64_t mappedPointPrecision_; //since clipper only uses integers as coordinates, coordinates are multiplied by mappedPointPrecision_ when stored in polygonXYPlane_ and divided back by mappedPointPrecision_ when returned (clipper integers range from +/- 4.6e18 ~= 2^62)
         
         ClipperLib::Path polygonXYPlane_; //clipper representation of polygon

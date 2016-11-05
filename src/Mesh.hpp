@@ -36,7 +36,7 @@ namespace mapmqp {
         void addVertex(std::shared_ptr<MeshVertex> p_vertex);
         void addFace(std::shared_ptr<MeshFace> p_face);
         
-        std::vector<Island> planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin, std::vector<std::shared_ptr<const MeshFace>> p_faces) const;
+        std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>> planeIntersection(const Plane & plane, std::vector<std::shared_ptr<const MeshFace>> p_faces) const;
         
     private:
         
@@ -77,7 +77,7 @@ namespace mapmqp {
         void other(std::shared_ptr<MeshFace> p_face);
 
         // Getters
-        const std::shared_ptr<const MeshVertex> getVertex(uint16_t v) const;
+        const std::shared_ptr<const MeshVertex> p_vertex(uint16_t v) const;
 
         // Operator overloads
         bool operator==(const MeshEdge & edge) const;
@@ -97,14 +97,14 @@ namespace mapmqp {
         const std::shared_ptr<const MeshFace> p_connectedFace(uint16_t f) const;
         Vector3D p_normal();
         
-        //returns whether or not the face intersections with a plane with a normal of planeNormal and contains the coordinate planeOrigin
-        bool intersectsPlane(const Vector3D & planeNormal, const Vector3D & planeOrigin) const;
+        //returns whether or not the face intersections with Plane
+        bool intersectsPlane(const Plane & plane) const;
         
-        //returns whether or not the entire face lays is on a plane with a normal of planeNormal and contains the coordinate planeOrigin (that is, all vertices of face lie on the plane)
-        bool liesOnPlane(const Vector3D & planeNormal, const Vector3D & planeOrigin) const;
+        //returns whether or not the entire face lays is on Plane (that is, all vertices of face lie on the plane)
+        bool liesOnPlane(const Plane & plane) const;
 
-        //if the face intersections with a plane with a normal of planeNormal and contains the coordinate planeOrigin and does not lie entirely on the plane, returns the line of intersection between the face and the plane, pair.first->pair.second is going counterclockwise
-        std::pair<Vector3D, Vector3D> planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin) const;
+        //if the face intersections with Plane and does not lie entirely on the plane, returns the line of intersection between the face and the plane, pair.first->pair.second is going counterclockwise
+        std::pair<Vector3D, Vector3D> planeIntersection(const Plane & plane) const;
 
         // Add a connecting face to this face
         void connect(std::shared_ptr<MeshFace> p_face, uint16_t edgeIndex);

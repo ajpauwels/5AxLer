@@ -18,22 +18,25 @@ namespace mapmqp {
     
     class Island {
     public:
-        Island(Polygon mainPolygon, std::vector<std::shared_ptr<const MeshFace>> p_mainPolygonMeshFaces);
+        Island(const Polygon & mainPolygon, std::vector<std::shared_ptr<const MeshFace>> p_mainPolygonMeshFaces);
         
         //getters
-        const Polygon & mainPolygon();
-        const std::vector<std::shared_ptr<const MeshFace>> & p_mainPolygonMeshFaces();
-        const std::vector<Polygon> & holes();
-        const std::vector<std::vector<std::shared_ptr<const MeshFace>>> & p_holesMeshFaces();
+        const Polygon & mainPolygon() const;
+        const std::vector<std::shared_ptr<const MeshFace>> & p_mainPolygonMeshFaces() const;
+        const std::vector<Polygon> & holes() const;
+        const std::vector<std::vector<std::shared_ptr<const MeshFace>>> & p_holesMeshFaces() const;
+        const std::vector<std::vector<Island>> holeIslands() const;
         
         void addHole(Polygon hole, std::vector<std::shared_ptr<const MeshFace>> p_holeMeshFaces);
+        void addIslandToHole(Island island, int holeIndex);
         
     private:
-        Polygon mainPolygon_;
-        std::vector<std::shared_ptr<const MeshFace>> p_mainPolygonMeshFaces_;
+        Polygon mainPolygon_; //polygon that represents outline of island
+        std::vector<std::shared_ptr<const MeshFace>> p_mainPolygonMeshFaces_; //ptr to MeshFace on each edge of mainPolygon_, i.e. p_mainPolygonMeshFaces_[x] is the MeshFace that the xth edge of mainPolygon_ came from
         
-        std::vector<Polygon> holes_;
-        std::vector<std::vector<std::shared_ptr<const MeshFace>>> p_holesMeshFaces_;
+        std::vector<Polygon> holes_; //series of holes inside mainPolygon_
+        std::vector<std::vector<std::shared_ptr<const MeshFace>>> p_holesMeshFaces_; //same as p_mainPolygonMeshFaces_ but p_holesMeshFaces_[i][x] is for the ith hole instead of the mainPolygon_
+        std::vector<std::vector<Island>> holeIslands_; //islands inside each hole, so holeIslands_[i][j] is the jth island inside the ith hole
     };
 }
 

@@ -9,10 +9,11 @@
 #ifndef BuildMap_hpp
 #define BuildMap_hpp
 
+#include "../libs/clipper/clipper.hpp"
+
 #include "Utility.hpp"
 #include "Vector3D.hpp"
 #include "Angle.hpp"
-#include "../libs/clipper/clipper.hpp"
 
 namespace mapmqp {
     class BuildMap {

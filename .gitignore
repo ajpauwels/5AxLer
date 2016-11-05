@@ -30,3 +30,9 @@ build
 *.exe
 *.out
 *.app
+
+# Logs
+*.log
+
+# OXS files
+*.DS_Store

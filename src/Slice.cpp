@@ -7,3 +7,21 @@
 //
 
 #include "Slice.hpp"
+
+using namespace mapmqp;
+using namespace std;
+
+Slice::Slice(const Plane & slicePlane) :
+slicePlane_(slicePlane) { }
+
+const std::vector<Island> & Slice::islands() const {
+    return islands_;
+}
+
+const Plane & Slice::slicePlane() const {
+    return slicePlane_;
+}
+
+void Slice::addIsland(Island island) {
+    islands_.push_back(island);
+}
