@@ -36,7 +36,7 @@ namespace mapmqp {
         void addVertex(std::shared_ptr<MeshVertex> p_vertex);
         void addFace(std::shared_ptr<MeshFace> p_face);
         
-        std::vector<Island> planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin, std::vector<std::shared_ptr<const MeshFace>> p_faces) const;
+        std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>> planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin, std::vector<std::shared_ptr<const MeshFace>> p_faces) const;
         
     private:
         
@@ -77,7 +77,7 @@ namespace mapmqp {
         void other(std::shared_ptr<MeshFace> p_face);
 
         // Getters
-        const std::shared_ptr<const MeshVertex> getVertex(uint16_t v) const;
+        const std::shared_ptr<const MeshVertex> p_vertex(uint16_t v) const;
 
         // Operator overloads
         bool operator==(const MeshEdge & edge) const;

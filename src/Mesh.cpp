@@ -101,20 +101,22 @@ void Mesh::addFace(shared_ptr<MeshFace> face) {
 }
 
 struct TripleP_MeshVertexHash {
-    std::size_t operator()(const std::shared_ptr<MeshVertex> & v1, const std::shared_ptr<MeshVertex> & v2, const std::shared_ptr<MeshVertex> & v3) const {
-        return std::hash<std::shared_ptr<MeshVertex>>()(v1) ^ std::hash<std::shared_ptr<MeshVertex>>()(v2) ^ std::hash<std::shared_ptr<MeshVertex>>()(v3);
+    size_t operator()(const tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>> & p_vertices) const {
+        return hash<shared_ptr<const MeshVertex>>()(get<0>(p_vertices)) ^ hash<shared_ptr<const MeshVertex>>()(get<1>(p_vertices)) ^ hash<shared_ptr<const MeshVertex>>()(get<2>(p_vertices));
     }
 };
 
-vector<Island> Mesh::planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin, vector<shared_ptr<const MeshFace>> p_faces) const {
+std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>> Mesh::planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin, vector<shared_ptr<const MeshFace>> p_faces) const {
     //TODO handle faces that lie entirely on plane
     vector<Island> islands;
     vector<shared_ptr<const MeshFace>> p_intersectingFaces;
     
-    //unordered_map<tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>, shared_ptr<MeshFace>, TripleP_MeshVertexHash> p_checkedFaces;
+    unordered_map<tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>, shared_ptr<const MeshFace>, TripleP_MeshVertexHash> p_checkedFaces;
     
+    //TODO could this be made a for loop instead and would it be better? I think so...
     while (p_faces.size() > 0) {
-        if (!((*p_faces.begin())->intersectsPlane(planeNormal, planeOrigin))) { //face does not intersect plane, remove from list of vertices
+        if ((p_checkedFaces.find(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>((*p_faces.begin())->p_vertex(0), (*p_faces.begin())->p_vertex(1), (*p_faces.begin())->p_vertex(2))) == p_checkedFaces.end()) \
+            || (!((*p_faces.begin())->intersectsPlane(planeNormal, planeOrigin)))) { //face has either already been evaluated or it does not intersect plane, either case remove it from list of vertices and continue
             p_faces.erase(p_faces.begin());
         } else { //cycle around faces until circle is complete
             vector<Vector3D> polygonPoints;
@@ -127,12 +129,11 @@ vector<Island> Mesh::planeIntersection(const Vector3D & planeNormal, const Vecto
             shared_ptr<const MeshFace> p_nextFace = nullptr;
             
             do {
-                //p_checkedFaces.emplace(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>(p_currentFace->p_vertex(0), p_currentFace->p_vertex(1), p_currentFace->p_vertex(2)), p_currentFace);
+                //add ptr to MeshFace to list of checked faces
+                p_checkedFaces.emplace(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>(p_currentFace->p_vertex(0), p_currentFace->p_vertex(1), p_currentFace->p_vertex(2)), p_currentFace);
                 
                 //add ptr to MeshFace to hashtable of intersection faces
-//                if (!p_intersectingFaces.emplace(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>> (p_currentFace->p_vertex(0), p_currentFace->p_vertex(1), p_currentFace->p_vertex(2)), p_currentFace).second) {
-//                    writeLog(WARNING, "added same face twice to list of faces that intersects with plane");
-//                }
+                p_intersectingFaces.push_back(p_currentFace);
                 
                 //add first point of face intersection to list of polygon points
                 polygonPoints.push_back(p_currentFace->planeIntersection(planeNormal, planeOrigin).first);
@@ -155,48 +156,11 @@ vector<Island> Mesh::planeIntersection(const Vector3D & planeNormal, const Vecto
                 }
             } while (p_nextFace != p_startFace);
             
-            
+            islands.push_back(Island(Polygon(polygonPoints), p_polygonMeshFaces));
         }
     }
     
-    return islands;
-    
-    //    vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>> faceIntersections;
-    //
-    //    //find all intersections with plane
-    //    for (vector<shared_ptr<MeshFace>>::const_iterator it = p_faces_.begin(); it != p_faces().end(); it++) {
-    //        shared_ptr<MeshFace> p_face = *it;
-    //        if (p_face->intersectsPlane(planeNormal, planeOrigin)) {
-    //            //TODO check for face lying entirely on plane
-    //            faceIntersections.push_back(pair<pair<Vector3D, Vector3D>, shared_ptr<MeshFace>>(p_face->planeIntersection(planeNormal, planeOrigin), *it));
-    //        }
-    //    }
-    //
-    //    vector<Polygon> polygons;
-    //
-    //    while (faceIntersections.size() > 0) {
-    //        if (faceIntersections.size() < 3) {
-    //            writeLog(ERROR, "attempting to create polygon from less than 3 face intersections");
-    //            break;
-    //        }
-    //
-    //        vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>> polygonLines;
-    //        polygonLines.push_back(pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>(faceIntersections[0].first, faceIntersections[0].second));
-    //        faceIntersections.erase(faceIntersections.begin());
-    //
-    //        Vector3D front = polygonLines[0].first.first;
-    //        Vector3D back = polygonLines[0].first.second;
-    //
-    //        bool breakWhile = true;
-    //        while (breakWhile) {
-    //            breakWhile = true;
-    //            for (vector<pair<pair<Vector3D, Vector3D>, shared_ptr<const MeshFace>>>::iterator it = faceIntersections.begin(); it != faceIntersections.end(); it++) {
-    //                pair<Vector3D, Vector3D> line = it->first;
-    //            }
-    //        }
-    //    }
-    
-    //return islands;
+    return std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>>(islands, p_intersectingFaces);
 }
 
 //MeshVertex class functions
@@ -280,7 +244,7 @@ MeshEdge::MeshEdge(shared_ptr<const MeshVertex> p_v1, shared_ptr<const MeshVerte
  *
  * @return The vertex with the lowest z-, y-, or x-value
  */
-const shared_ptr<const MeshVertex> MeshEdge::getVertex(uint16_t v) const {
+const shared_ptr<const MeshVertex> MeshEdge::p_vertex(uint16_t v) const {
     if (v < 0 || v > 1) {
         writeLog(ERROR, "tried to access vertex %d in a MeshEdge (range 0 to 1)", v);
         return nullptr;
@@ -297,7 +261,7 @@ const shared_ptr<const MeshVertex> MeshEdge::getVertex(uint16_t v) const {
  * @return True if the MeshEdge objects have the same vertex values
  */
 bool MeshEdge::operator==(const MeshEdge & edge) const {
-    return p_vertices_[0]->vertex() == edge.getVertex(0)->vertex() && p_vertices_[1]->vertex() == edge.getVertex(1)->vertex();
+    return p_vertices_[0]->vertex() == edge.p_vertex(0)->vertex() && p_vertices_[1]->vertex() == edge.p_vertex(1)->vertex();
 }
 
 //MeshFace class functions
@@ -406,10 +370,10 @@ int16_t MeshFace::getEdgeIndex(shared_ptr<MeshEdge> p_edge) {
         shared_ptr<const MeshVertex> thisVert1 = p_vertices_[i];
         shared_ptr<const MeshVertex> thisVert2 = p_vertices_[(i + 1) % 3];
         
-        uint16_t numMatchVertices = (p_edge->getVertex(0) == thisVert1) +\
-        (p_edge->getVertex(1) == thisVert1) +\
-        (p_edge->getVertex(0) == thisVert2) +\
-        (p_edge->getVertex(1) == thisVert2);
+        uint16_t numMatchVertices = (p_edge->p_vertex(0) == thisVert1) +\
+        (p_edge->p_vertex(1) == thisVert1) +\
+        (p_edge->p_vertex(0) == thisVert2) +\
+        (p_edge->p_vertex(1) == thisVert2);
         if (numMatchVertices == 2) {
             return i;
         }

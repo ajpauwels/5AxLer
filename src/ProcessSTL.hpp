@@ -15,7 +15,7 @@
 namespace mapmqp {
 	class ProcessSTL {
 	public:
-		ProcessSTL(std::string stlFiles);
+		ProcessSTL(std::string stlFilePaths);
 		std::shared_ptr<Mesh> run();
 
 	private:
@@ -43,15 +43,15 @@ namespace mapmqp {
 		        Vector3DHash v3hasher;
 
 		        int hash = 17;
-		        hash = hash * 31 + v3hasher(p_me->getVertex(0)->vertex());
-		        hash = hash * 31 + v3hasher(p_me->getVertex(0)->vertex());
+		        hash = hash * 31 + v3hasher(p_me->p_vertex(0)->vertex());
+		        hash = hash * 31 + v3hasher(p_me->p_vertex(0)->vertex());
 		        return std::hash<int>()(hash);
 		    }
 		};
 
 		struct MeshEdgePtrEquality {
-		    bool operator()(const std::shared_ptr<MeshEdge> & edge1, const std::shared_ptr<MeshEdge> & edge2) const {
-		        return *edge1 == *edge2;
+		    bool operator()(const std::shared_ptr<MeshEdge> & p_edge1, const std::shared_ptr<MeshEdge> & p_edge2) const {
+		        return *p_edge1 == *p_edge2;
 		    }
 		};
 

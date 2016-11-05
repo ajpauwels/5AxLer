@@ -10,6 +10,7 @@
 #define Utility_hpp
 
 #define DEBUG_MODE
+//#define PRINT_SEPERATE_LOGS
 #define PRINT_LOGS_TO_CONSOLE
 
 #define SETTINGS_JSON_FILE_PATH "./settings.json"
@@ -61,23 +62,29 @@ namespace mapmqp {
         static bool logInit = false;
         
         static FILE * logFile;
+#ifdef PRINT_SEPERATE_LOGS
         static FILE * logInfoFile;
         static FILE * logWarningsFile;
         static FILE * logErrorsFile;
+#endif
         
         if (!logInit) {
             mkdir("./logs", 0777);
             
             //open all log files
             std::string logFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp.log";
+#ifdef PRINT_SEPERATE_LOGS
             std::string logInfoFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-info.log";
             std::string logWarningsFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-warnings.log";
             std::string logErrorsFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-errors.log";
+#endif
             
             logFile = fopen(logFilePath.c_str(), "w+");
+#ifdef PRINT_SEPERATE_LOGS
             logInfoFile = fopen(logInfoFilePath.c_str(), "w+");
             logWarningsFile = fopen(logWarningsFilePath.c_str(), "w+");
             logErrorsFile = fopen(logErrorsFilePath.c_str(), "w+");
+#endif
             
             //TODO confirm this was successful
             
@@ -99,6 +106,7 @@ namespace mapmqp {
         va_start(argsConsole, entry);
 #endif
         
+#ifdef PRINT_SEPERATE_LOGS
         switch (type) {
             case INFO: {
                 fprintf(logInfoFile, "[INFO] ");
@@ -107,9 +115,11 @@ namespace mapmqp {
                 fflush(logInfoFile);
                 
                 fprintf(logFile, "[INFO] ");
+#endif
 #ifdef PRINT_LOGS_TO_CONSOLE
                 printf("[INFO] ");
 #endif
+#ifdef PRINT_SEPERATE_LOGS
                 break;
             }
             case WARNING: {
@@ -119,9 +129,11 @@ namespace mapmqp {
                 fflush(logWarningsFile);
                 
                 fprintf(logFile, "[WARNING] ");
+#endif
 #ifdef PRINT_LOGS_TO_CONSOLE
                 printf("[WARNING] ");
 #endif
+#ifdef PRINT_SEPERATE_LOGS
                 break;
             }
             case ERROR: {
@@ -131,9 +143,11 @@ namespace mapmqp {
                 fflush(logErrorsFile);
                 
                 fprintf(logFile, "[ERROR] ");
+#endif
 #ifdef PRINT_LOGS_TO_CONSOLE
                 printf("[ERROR] ");
 #endif
+#ifdef PRINT_SEPERATE_LOGS
                 break;
             }
             default:
@@ -150,6 +164,7 @@ namespace mapmqp {
         va_end(argsWarning);
         va_end(argsError);
         
+#endif
 #ifdef PRINT_LOGS_TO_CONSOLE
         vprintf(entry, argsConsole);
         printf("\n");

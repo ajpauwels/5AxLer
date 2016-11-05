@@ -25,6 +25,7 @@ points_(points) {
         //TODO throw exception
     }
     
+    //TODO first 3 points may be on same line, in which case plane normal cannot be determined by first 3 points
     //set plane's normal
     planeNormal_ = Vector3D::crossProduct(points[1] - points[0], points[2] - points[0]); //TODO this is backwards?
     planeNormal_.normalize();

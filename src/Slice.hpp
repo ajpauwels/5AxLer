@@ -20,7 +20,7 @@ namespace mapmqp {
         Slice(Vector3D slicePlaneNormal, Vector3D slicePlaneOrigin);
         
         const std::vector<Island> & islands() const;
-        Vector3D slicePlane() const;
+        Vector3D slicePlaneNormal() const;
         Vector3D slicePlaneOrigin() const;
         
         void addIsland(Island island);
