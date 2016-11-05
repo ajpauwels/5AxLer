@@ -153,7 +153,7 @@ void ProcessSTL::constructMeshFromSTL() {
         file.read((char*)&size, 4);						// Get the number of triangles
         
         writeLog(INFO, "number of triangles: %d", size);
-        
+
         double lowestZVal = INFINITY;
         
         for (unsigned int i = 0; i < size; ++i) {		// Loop through all triangles
@@ -171,7 +171,7 @@ void ProcessSTL::constructMeshFromSTL() {
             vertices[0] = Vector3D(points[3], points[4], points[5]);	// Get first point of triangle
             vertices[1] = Vector3D(points[6], points[7], points[8]);	// Get second point of triangle
             vertices[2] = Vector3D(points[9], points[10], points[11]);	// Get third point of triangle
-            
+
             shared_ptr<MeshVertex> p_meshVertices[3]; //Three MeshVertex pointers
             
             // Process the three vertices of the triangle
