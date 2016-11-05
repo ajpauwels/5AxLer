@@ -78,6 +78,7 @@ int main(int argc, const char * argv[]) {
             }
             printf("\n");
         }
+        printf("Vertex: %s, number of connected faces: %ld\n", currFace->getVertex(0)->vertex().toString().c_str(), currFace->getVertex(0)->p_faces().size());
         printf("\n");
 
     }

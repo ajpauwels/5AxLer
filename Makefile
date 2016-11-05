@@ -45,6 +45,10 @@ BuildMap.o: $(SRC_DIR)BuildMap.cpp $(SRC_DIR)BuildMap.hpp $(SRC_DIR)Utility.hpp 
 ProcessSTL.o: $(SRC_DIR)ProcessSTL.cpp $(SRC_DIR)ProcessSTL.hpp
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)ProcessSTL.o $(SRC_DIR)ProcessSTL.cpp
 
+# Build the VolumeDecomposer object file
+VolumeDecomposer.o: $(SRC_DIR)VolumeDecomposer.cpp $(SRC_DIR)VolumeDecomposer.hpp
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)VolumeDecomposer.o $(SRC_DIR)VolumeDecomposer.cpp
+
 # Build the Tests object file
 # Tests.o: $(TEST_DIR)
 # 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)Tests.o $(TEST_DIR)Tests.cpp
