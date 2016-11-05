@@ -6,8 +6,8 @@
 using namespace mapmqp;
 using namespace std;
 
-ProcessSTL::ProcessSTL(string stlFile) : p_mesh_(new Mesh()) {
-	stlFile_ = stlFile;
+ProcessSTL::ProcessSTL(string stlFilePath) : p_mesh_(new Mesh()) {
+	stlFilePath_ = stlFilePath;
 }
 
 /**
@@ -29,8 +29,8 @@ shared_ptr<Mesh> ProcessSTL::run() {
  *
  * @return True if success, false otherwise
  */
-bool ProcessSTL::getFileHandler(ifstream& file) {
-	file.open(this->stlFile_.c_str(), ios::in | ios::binary);
+bool ProcessSTL::getFileHandler(ifstream & file) {
+	file.open(this->stlFilePath_.c_str(), ios::in | ios::binary);
 
 	return file.is_open();
 }
@@ -45,10 +45,10 @@ bool ProcessSTL::getFileHandler(ifstream& file) {
  *
  * @return A shared pointer to the MeshVertex in the unordered map
  */
-shared_ptr<MeshVertex> ProcessSTL::addMeshVertex(shared_ptr<MeshVertex> vertex) {
+shared_ptr<MeshVertex> ProcessSTL::addMeshVertex(shared_ptr<MeshVertex> p_vertex) {
 	shared_ptr<MeshVertex> finalVertex;
 	 // Add the vertex to the vertices list unless it's already there
-	pair<unordered_map<Vector3D, shared_ptr<MeshVertex>, Vector3DHash>::iterator, bool> emplacePair = mappedVertices_.emplace(vertex->vertex(), vertex); //place MeshVertex ptr into hashtable
+	pair<unordered_map<Vector3D, shared_ptr<MeshVertex>, Vector3DHash>::iterator, bool> emplacePair = p_mappedVertices_.emplace(p_vertex->vertex(), p_vertex); //place MeshVertex ptr into hashtable
 	finalVertex = emplacePair.first->second; //set MeshVertex ptr to returned value from hashtable in case it has changed
 	if (emplacePair.second) { //if MeshVertex did not exist in hashtable, add to list of vertices
 	    p_mesh_->addVertex(finalVertex);
@@ -63,20 +63,28 @@ shared_ptr<MeshVertex> ProcessSTL::addMeshVertex(shared_ptr<MeshVertex> vertex) 
  *
  * @param face The MeshFace to add 
  */
-void ProcessSTL::addMeshFace(shared_ptr<MeshFace> face) {
+void ProcessSTL::addMeshFace(shared_ptr<MeshFace> p_face) {
 	// Gather vertices and create edges
-	std::shared_ptr<const MeshVertex> p_vert1 = face->getVertex(0);
-	std::shared_ptr<const MeshVertex> p_vert2 = face->getVertex(1);
-	std::shared_ptr<const MeshVertex> p_vert3 = face->getVertex(2);
-	std::shared_ptr<MeshEdge> edge1(new MeshEdge(p_vert1, p_vert2));
-	std::shared_ptr<MeshEdge> edge2(new MeshEdge(p_vert2, p_vert3));
-	std::shared_ptr<MeshEdge> edge3(new MeshEdge(p_vert3, p_vert1));
-	std::shared_ptr<MeshEdge> edges[3] = {edge1, edge2, edge3};
+    shared_ptr<const MeshVertex> p_vert1 = p_face->p_vertex(0);
+	shared_ptr<const MeshVertex> p_vert2 = p_face->p_vertex(1);
+	shared_ptr<const MeshVertex> p_vert3 = p_face->p_vertex(2);
+	shared_ptr<MeshEdge> p_edge1(new MeshEdge(p_vert1, p_vert2));
+	shared_ptr<MeshEdge> p_edge2(new MeshEdge(p_vert2, p_vert3));
+	shared_ptr<MeshEdge> p_edge3(new MeshEdge(p_vert3, p_vert1));
+	shared_ptr<MeshEdge> edges[3] = {p_edge1, p_edge2, p_edge3};
+
+	Vector3D tv1(38100, 0, 25400);
+	Vector3D tv2(38100, 76200, 25400);
+	shared_ptr<MeshVertex> tmv1(new MeshVertex(tv1));
+	shared_ptr<MeshVertex> tmv2(new MeshVertex(tv2));
+	shared_ptr<MeshEdge> tme1(new MeshEdge(tmv1, tmv2));
 
 	// Check each edge against the map of edges
 	for (unsigned int i = 0; i < 3; ++i) {
 		// Hash the MeshEdge to the map of edges
-		pair<unordered_map<shared_ptr<MeshEdge>, shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality>::iterator, bool> emplacePair = mappedEdges_.emplace(edges[i], face);
+		pair<unordered_map<shared_ptr<MeshEdge>, shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality>::iterator, bool> emplacePair = p_mappedEdges_.emplace(edges[i], p_face);
+
+		printf("EDGE: %s, %s\n", edges[i]->getVertex(0)->vertex().toString().c_str(), edges[i]->getVertex(1)->vertex().toString().c_str());
 
 		// Get the resulting MeshEdge and MeshFace from the hash
 		shared_ptr<MeshEdge> hashedEdge = emplacePair.first->first;
@@ -85,13 +93,19 @@ void ProcessSTL::addMeshFace(shared_ptr<MeshFace> face) {
 		// Get whether the MeshFace was added
 		bool faceWasAdded = emplacePair.second;
 
+		MeshEdgePtrEquality mepe;
+
+		if (*edges[i] == *tme1) {
+			printf("MATCHED, faceWasAdded = %d, %d\n", faceWasAdded, mepe(edges[i], tme1));
+		}
+
 		// If there was already a face at the edge, do some error checking and connect them
 		if (!faceWasAdded) {
 			// If the exact same face has already been added to the mesh, it's logical that
 			// it would have the exact same 3 edges. So we only check the first edge to see
 			// if the already added face is the same face
 			if (i == 0) {
-				if (hashedFace == face) {
+				if (hashedFace == p_face) {
 					writeLog(WARNING, "attempted to add a face to the mesh that has already been added, skipping");
 					return;
 				}
@@ -103,17 +117,18 @@ void ProcessSTL::addMeshFace(shared_ptr<MeshFace> face) {
 				writeLog(ERROR, "edge hashed to a face but face did not have that edge, removed face from the hash for that edge");
 				return;
 			}
-			hashedFace->connect(face, hashedFaceEdgeIndex);
+            
+			hashedFace->connect(p_face, hashedFace->getEdgeIndex(hashedEdge));
 
-			face->connect(hashedFace, i);
+			p_face->connect(hashedFace, i);
 
 			// Remove the edge from the hashmap since it's only used for the two connected triangles
-			mappedEdges_.erase(emplacePair.first);
+			p_mappedEdges_.erase(emplacePair.first);
 		}
 	}
 
 	// Finally, add the face to the mesh list of faces
-	p_mesh_->addFace(face);
+	p_mesh_->addFace(p_face);
 }
 
 /**
@@ -132,8 +147,8 @@ void ProcessSTL::constructMeshFromSTL() {
     char *header = new char[80];					// The 80-char file header
     unsigned int size;								// The number of triangles in the file
     
-    writeLog(INFO, "parsing STL file %s...", stlFile_.c_str());
-    if (getFileHandler(file)) {							// Check that we opened successfully
+    writeLog(INFO, "parsing STL file %s...", stlFilePath_.c_str());
+    if (getFileHandler(file)) {                        // Check that we opened successfully
         file.read(header, 80);							// Get the header
         file.read((char*)&size, 4);						// Get the number of triangles
 
@@ -167,13 +182,13 @@ void ProcessSTL::constructMeshFromSTL() {
                 // If the lowestVertex was never set or the current vertex is lower than the lowestVertex, replace
                 // lowestVertex with the current vertex
                 if (p_meshVertices[i]->vertex().z() == lowestZVal) {
-                    lowestVertices_.push_back(p_meshVertices[i]);
+                    p_lowestVertices_.push_back(p_meshVertices[i]);
                 }
                 // If a lower vertex was encountered, reset the lowest vertices list
                 else if (p_meshVertices[i]->vertex().z() < lowestZVal) {
                     lowestZVal = p_meshVertices[i]->vertex().z();
-                    lowestVertices_.clear();
-                    lowestVertices_.push_back(p_meshVertices[i]);
+                    p_lowestVertices_.clear();
+                    p_lowestVertices_.push_back(p_meshVertices[i]);
                 }
             }
 			
@@ -190,6 +205,6 @@ void ProcessSTL::constructMeshFromSTL() {
         }
         file.close();	// Close the file
     } else {
-        writeLog(ERROR, "unable to open file %s [errno: %d]", stlFile_.c_str(), strerror(errno));
+        writeLog(ERROR, "unable to open file %s [errno: %d]", stlFilePath_.c_str(), strerror(errno));
     }
 }

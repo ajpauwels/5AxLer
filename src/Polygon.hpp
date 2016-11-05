@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "Vector3D.hpp"
-#include "../libs/Clipper/clipper.hpp"
+#include "../libs/clipper/clipper.hpp"
 
 namespace mapmqp {
     class Polygon {

@@ -1,0 +1,10 @@
+[ERROR] dot product between plane normal of polygon and chosen y-axis = 0.000000 does not equal 0
+[ERROR] dot product between chosen x-axis and y-axis of polygon plane = 0.000000 does not equal 0
+[INFO] starting 5AxLer at time 03/11/2016 03:19:44
+[INFO] reading settings json file from ./settings.json...
+[INFO] ./settings.json:
+{
+  "name": "Ethan",
+  "age": 21
+}
+

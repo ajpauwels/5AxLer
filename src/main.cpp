@@ -58,31 +58,30 @@ int main(int argc, const char * argv[]) {
     // writeLog(INFO, "v4 == v4 : %d", v4 == v5);
 
     /* testing ProcessSTL */
-    mapmqp::ProcessSTL parser(argv[1]);
-    std::shared_ptr<mapmqp::Mesh> mesh = parser.run();
-    const std::vector<std::shared_ptr<mapmqp::MeshFace>> meshFaces = mesh->faces();
-    for (uint32_t i = 0; i < meshFaces.size(); ++i) {
-        const std::shared_ptr<mapmqp::MeshFace> currFace = meshFaces[i];
 
-        printf("Face vertices are:\n");
-        for (uint16_t j = 0; j < 3; ++j) {
-            printf("\t[%f, %f, %f]", currFace->getVertex(j)->vertex().x(), currFace->getVertex(j)->vertex().y(), currFace->getVertex(j)->vertex().z());
-        }
-        printf("\n");
-        printf("Connected faces are:\n");
-        for (uint16_t j = 0; j < 3; ++j) {
-            printf("%d.)", j);
-            const std::shared_ptr<const mapmqp::MeshFace> connFace = currFace->getConnectedFace(j);
-            for (uint16_t k = 0; k < 3; ++k) {
-                printf("\t[%f, %f, %f]", connFace->getVertex(k)->vertex().x(), connFace->getVertex(k)->vertex().y(), connFace->getVertex(k)->vertex().z());
-            }
-            printf("\n");
-        }
-        printf("Vertex: %s, number of connected faces: %ld\n", currFace->getVertex(0)->vertex().toString().c_str(), currFace->getVertex(0)->p_faces().size());
-        printf("\n");
+   mapmqp::ProcessSTL parser(argv[1]);
+   std::shared_ptr<mapmqp::Mesh> mesh = parser.run();
+   const std::vector<std::shared_ptr<mapmqp::MeshFace>> meshFaces = mesh->p_faces();
+   for (uint32_t i = 0; i < meshFaces.size(); ++i) {
+       const std::shared_ptr<mapmqp::MeshFace> currFace = meshFaces[i];
 
-    }
+       printf("Face vertices are:\n");
+       for (uint16_t j = 0; j < 3; ++j) {
+           printf("\t[%f, %f, %f]", currFace->p_vertex(j)->vertex().x(), currFace->p_vertex(j)->vertex().y(), currFace->p_vertex(j)->vertex().z());
+       }
+       printf("\n");
+       printf("Connected faces are:\n");
+       for (uint16_t j = 0; j < 3; ++j) {
+           printf("%d.)", j);
+           const std::shared_ptr<const mapmqp::MeshFace> connFace = currFace->p_connectedFace(j);
+           for (uint16_t k = 0; k < 3; ++k) {
+               printf("\t[%f, %f, %f]", connFace->p_vertex(k)->vertex().x(), connFace->p_vertex(k)->vertex().y(), connFace->p_vertex(k)->vertex().z());
+           }
+           printf("\n");
+       }
+       printf("\n");
 
+   }
 
     /*
     //testing build map
