@@ -12,10 +12,17 @@ namespace mapmqp {
 	class Slicer {
 	public:
 		// Constructor
-		Slicer::Slicer();
+		Slicer(std::shared_ptr<Mesh> p_m, Plane slicePlane);
 
-		// Slice iterator
+		// Sets the height relative to the slicing plane that the next slice should be at
+		void setHeight(uint32_t height);
+
+		// Gets the next slice as defined by the sliceHeight variable
+		Slice nextSlice();
 
 	private:
+		std::shared_ptr<Mesh> p_mesh_;
+		Plane slicingPlane_;
+		uint32_t sliceHeight_;
 	};
 }
