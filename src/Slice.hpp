@@ -17,17 +17,16 @@
 namespace mapmqp {
     class Slice {
     public:
-        Slice(Vector3D slicePlaneNormal, Vector3D slicePlaneOrigin);
+        Slice(const Plane & slicePlane);
         
         const std::vector<Island> & islands() const;
-        Vector3D slicePlaneNormal() const;
-        Vector3D slicePlaneOrigin() const;
+        const Plane & slicePlane() const;
         
         void addIsland(Island island);
         
     private:
         std::vector<Island> islands_;
-        Vector3D slicePlaneNormal_, slicePlaneOrigin_;
+        Plane slicePlane_;
     };
 }
 

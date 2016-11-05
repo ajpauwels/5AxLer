@@ -11,7 +11,7 @@
 using namespace mapmqp;
 using namespace std;
 
-Island::Island(Polygon mainPolygon, vector<shared_ptr<const MeshFace>> p_mainPolygonMeshFaces) :
+Island::Island(const Polygon & mainPolygon, vector<shared_ptr<const MeshFace>> p_mainPolygonMeshFaces) :
 mainPolygon_(mainPolygon),
 p_mainPolygonMeshFaces_(p_mainPolygonMeshFaces) { }
 

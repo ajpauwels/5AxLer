@@ -106,58 +106,58 @@ struct TripleP_MeshVertexHash {
     }
 };
 
-std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>> Mesh::planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin, vector<shared_ptr<const MeshFace>> p_faces) const {
-    //TODO handle faces that lie entirely on plane
+std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>> Mesh::planeIntersection(const Plane & plane, vector<shared_ptr<const MeshFace>> p_faces) const {
     vector<Island> islands;
     vector<shared_ptr<const MeshFace>> p_intersectingFaces;
     
-    unordered_map<tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>, shared_ptr<const MeshFace>, TripleP_MeshVertexHash> p_checkedFaces;
+    unordered_map<tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>, shared_ptr<const MeshFace>, TripleP_MeshVertexHash> mapped_p_checkedFaces;
     
-    //TODO could this be made a for loop instead and would it be better? I think so...
-    while (p_faces.size() > 0) {
-        if ((p_checkedFaces.find(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>((*p_faces.begin())->p_vertex(0), (*p_faces.begin())->p_vertex(1), (*p_faces.begin())->p_vertex(2))) == p_checkedFaces.end()) \
-            || (!((*p_faces.begin())->intersectsPlane(planeNormal, planeOrigin)))) { //face has either already been evaluated or it does not intersect plane, either case remove it from list of vertices and continue
-            p_faces.erase(p_faces.begin());
-        } else { //cycle around faces until circle is complete
-            vector<Vector3D> polygonPoints;
-            vector<shared_ptr<const MeshFace>> p_polygonMeshFaces;
-            
-            //TODO determine somehow if polygon is hole inside of other polygon
-            
-            shared_ptr<const MeshFace> p_startFace = *p_faces.begin();
-            shared_ptr<const MeshFace> p_currentFace = p_startFace;
-            shared_ptr<const MeshFace> p_nextFace = nullptr;
-            
-            do {
-                //add ptr to MeshFace to list of checked faces
-                p_checkedFaces.emplace(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>(p_currentFace->p_vertex(0), p_currentFace->p_vertex(1), p_currentFace->p_vertex(2)), p_currentFace);
-                
-                //add ptr to MeshFace to hashtable of intersection faces
-                p_intersectingFaces.push_back(p_currentFace);
-                
-                //add first point of face intersection to list of polygon points
-                polygonPoints.push_back(p_currentFace->planeIntersection(planeNormal, planeOrigin).first);
-                p_polygonMeshFaces.push_back(p_currentFace);
-                
-                pair<Vector3D, Vector3D> intersectionLine = p_currentFace->planeIntersection(planeNormal, planeOrigin);
-                
-                //determine which edge of face is next
-                if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(0)->vertex_, intersectionLine.second - p_currentFace->p_vertex(1)->vertex_).magnitude() == 0) {
-                    p_nextFace->p_connectedFace(0);
-                } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(1)->vertex_, intersectionLine.second - p_currentFace->p_vertex(2)->vertex_).magnitude() == 0) {
-                    p_nextFace->p_connectedFace(1);
-                } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(2)->vertex_, intersectionLine.second - p_currentFace->p_vertex(0)->vertex_).magnitude() == 0) {
-                    p_nextFace->p_connectedFace(2);
-                }
-                
-                if (!p_nextFace) {
-                    writeLog(ERROR, "connected face to face being sliced is nullptr");
-                    break;
-                }
-            } while (p_nextFace != p_startFace);
-            
-            islands.push_back(Island(Polygon(polygonPoints), p_polygonMeshFaces));
+    for (vector<shared_ptr<const MeshFace>>::iterator it = p_faces.begin(); it != p_faces.end(); it++) {
+        if ((mapped_p_checkedFaces.find(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>((*it)->p_vertex(0), (*it)->p_vertex(1), (*it)->p_vertex(2))) == mapped_p_checkedFaces.end()) //face has already been evaluated
+            || (!((*it)->intersectsPlane(plane))) //face does not intersect plane
+            || ((*it)->liesOnPlane(plane))) {
+            continue;
         }
+        
+        //cycle around faces until circle is complete
+        vector<Vector3D> polygonPoints;
+        vector<shared_ptr<const MeshFace>> p_polygonMeshFaces;
+        
+        //TODO determine somehow if polygon is hole inside of other polygon
+        
+        shared_ptr<const MeshFace> p_startFace = *it;
+        shared_ptr<const MeshFace> p_currentFace = p_startFace;
+        shared_ptr<const MeshFace> p_nextFace = nullptr;
+        
+        do {
+            //add ptr to MeshFace to list of checked faces
+            mapped_p_checkedFaces.emplace(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>(p_currentFace->p_vertex(0), p_currentFace->p_vertex(1), p_currentFace->p_vertex(2)), p_currentFace);
+            
+            //add ptr to MeshFace to hashtable of intersection faces
+            p_intersectingFaces.push_back(p_currentFace);
+            
+            //add first point of face intersection to list of polygon points
+            polygonPoints.push_back(p_currentFace->planeIntersection(plane).first);
+            p_polygonMeshFaces.push_back(p_currentFace);
+            
+            pair<Vector3D, Vector3D> intersectionLine = p_currentFace->planeIntersection(plane);
+            
+            //determine which edge of face is next
+            if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(0)->vertex_, intersectionLine.second - p_currentFace->p_vertex(1)->vertex_).magnitude() == 0) {
+                p_nextFace->p_connectedFace(0);
+            } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(1)->vertex_, intersectionLine.second - p_currentFace->p_vertex(2)->vertex_).magnitude() == 0) {
+                p_nextFace->p_connectedFace(1);
+            } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(2)->vertex_, intersectionLine.second - p_currentFace->p_vertex(0)->vertex_).magnitude() == 0) {
+                p_nextFace->p_connectedFace(2);
+            }
+            
+            if (!p_nextFace) {
+                writeLog(ERROR, "connected face to face being sliced is nullptr");
+                break;
+            }
+        } while (p_nextFace != p_startFace);
+        
+        islands.push_back(Island(Polygon(polygonPoints), p_polygonMeshFaces));
     }
     
     return std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>>(islands, p_intersectingFaces);
@@ -348,7 +348,7 @@ const shared_ptr<const MeshFace> MeshFace::p_connectedFace(uint16_t f) const {
 void MeshFace::connect(shared_ptr<MeshFace> connectingFace, uint16_t edgeIndex) {
     // Write warning and return if invalid edgeIndex
     if (edgeIndex < 0 || edgeIndex > 2) {
-        writeLog(WARNING, "tried to connect a face to edge index %d (range 0 to 2)", edgeIndex);
+        writeLog(WARNING, "tried to connect a face to edge index %d (range 0-2)", edgeIndex);
         return;
     }
     
@@ -382,10 +382,10 @@ int16_t MeshFace::getEdgeIndex(shared_ptr<MeshEdge> p_edge) {
     return -1;
 }
 
-bool MeshFace::intersectsPlane(const Vector3D & planeNormal, const Vector3D & pointOnPlane) const {
-    double v1Val = Vector3D::dotProduct(planeNormal, p_vertices_[0]->vertex() - pointOnPlane);
-    double v2Val = Vector3D::dotProduct(planeNormal, p_vertices_[1]->vertex() - pointOnPlane);
-    double v3Val = Vector3D::dotProduct(planeNormal, p_vertices_[2]->vertex() - pointOnPlane);
+bool MeshFace::intersectsPlane(const Plane & plane) const {
+    double v1Val = Vector3D::dotProduct(plane.normal(), p_vertices_[0]->vertex() - plane.origin());
+    double v2Val = Vector3D::dotProduct(plane.normal(), p_vertices_[1]->vertex() - plane.origin());
+    double v3Val = Vector3D::dotProduct(plane.normal(), p_vertices_[2]->vertex() - plane.origin());
     if ((v1Val == 0) || (v2Val == 0) || (v3Val == 0)) { //if any point lies exactly on plane, face intersects
         return true;
     } else if ((v1Val < 0) && (v2Val < 0) && (v3Val < 0)) { //if all points lie below plane, face does not intersect
@@ -401,10 +401,10 @@ Vector3D MeshFace::p_normal(){
     return normal_;
 }
 
-bool MeshFace::liesOnPlane(const Vector3D& planeNormal, const Vector3D& pointOnPlane) const {
-    double v1Val = Vector3D::dotProduct(planeNormal, p_vertices_[0]->vertex() - pointOnPlane);
-    double v2Val = Vector3D::dotProduct(planeNormal, p_vertices_[1]->vertex() - pointOnPlane);
-    double v3Val = Vector3D::dotProduct(planeNormal, p_vertices_[2]->vertex() - pointOnPlane);
+bool MeshFace::liesOnPlane(const Plane & plane) const {
+    double v1Val = Vector3D::dotProduct(plane.normal(), p_vertices_[0]->vertex() - plane.origin());
+    double v2Val = Vector3D::dotProduct(plane.normal(), p_vertices_[1]->vertex() - plane.origin());
+    double v3Val = Vector3D::dotProduct(plane.normal(), p_vertices_[2]->vertex() - plane.origin());
     
     if ((v1Val == 0) && (v2Val == 0) && (v3Val == 0)) { //if every point lies exactly on plane
         return true;
@@ -413,19 +413,18 @@ bool MeshFace::liesOnPlane(const Vector3D& planeNormal, const Vector3D& pointOnP
     }
 }
 
-pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNormal, const Vector3D & planeOrigin) const {
-    //TODO by finding which point (A) lies on different side than other points (B and C), and finding intersections of lines containing A-B and A-C
-    if (intersectsPlane(planeNormal, planeOrigin)) {
+pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Plane & plane) const {
+    if (intersectsPlane(plane)) {
         writeLog(WARNING, "attempted to find intersection line of MeshFace with plane that does not intersect");
         return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
-    } else if (liesOnPlane(planeNormal, planeOrigin)) {
+    } else if (liesOnPlane(plane)) {
         writeLog(WARNING, "attempted to find intersection line of MeshFace with plane that is parallel to face");
         return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
     }
     
-    double v1Val = Vector3D::dotProduct(planeNormal, p_vertices_[0]->vertex() - planeOrigin);
-    double v2Val = Vector3D::dotProduct(planeNormal, p_vertices_[1]->vertex() - planeOrigin);
-    double v3Val = Vector3D::dotProduct(planeNormal, p_vertices_[2]->vertex() - planeOrigin);
+    double v1Val = Vector3D::dotProduct(plane.normal(), p_vertices_[0]->vertex() - plane.origin());
+    double v2Val = Vector3D::dotProduct(plane.normal(), p_vertices_[1]->vertex() - plane.origin());
+    double v3Val = Vector3D::dotProduct(plane.normal(), p_vertices_[2]->vertex() - plane.origin());
     
     //if two vertices lie of plane, return edge between vertices
     //TODO determine which order vertices should be placed in pair
@@ -458,8 +457,8 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Vector3D & planeNorma
     Vector3D p01 = p1 - p0;
     Vector3D p02 = p2 - p0;
     
-    double t01 = Vector3D::dotProduct(planeNormal, planeOrigin - p0) / Vector3D::dotProduct(planeNormal, p01);
-    double t02 = Vector3D::dotProduct(planeNormal, planeOrigin - p0) / Vector3D::dotProduct(planeNormal, p02);
+    double t01 = Vector3D::dotProduct(plane.normal(), plane.origin() - p0) / Vector3D::dotProduct(plane.normal(), p01);
+    double t02 = Vector3D::dotProduct(plane.normal(), plane.origin() - p0) / Vector3D::dotProduct(plane.normal(), p02);
     
     //error checking
     if (t01 > p01.magnitude()) {

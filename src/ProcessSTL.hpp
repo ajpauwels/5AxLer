@@ -38,7 +38,7 @@ namespace mapmqp {
 		/**
 		 * Creates a hash value for a MeshEdge object using its vertices
 		 */
-		struct MeshEdgeHash {
+		struct MeshEdgePtrHash {
 		    std::size_t operator()(const std::shared_ptr<MeshEdge> & p_me) const {
 		        Vector3DHash v3hasher;
 
@@ -57,8 +57,8 @@ namespace mapmqp {
 
 		std::shared_ptr<Mesh> p_mesh_;
 		std::string stlFilePath_;
-		std::unordered_map<Vector3D, std::shared_ptr<MeshVertex>, Vector3DHash> p_mappedVertices_;
-        std::unordered_map<std::shared_ptr<MeshEdge>, std::shared_ptr<MeshFace>, MeshEdgeHash> p_mappedEdges_;
+		std::unordered_map<Vector3D, std::shared_ptr<MeshVertex>, Vector3DHash> mapped_p_vertices_;
+        std::unordered_map<std::shared_ptr<MeshEdge>, std::shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality> mapped_p_edges_;
         std::vector<std::shared_ptr<MeshVertex>> p_lowestVertices_;
 
 		bool getFileHandler(std::ifstream& file);

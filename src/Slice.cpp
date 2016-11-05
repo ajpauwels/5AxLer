@@ -11,20 +11,15 @@
 using namespace mapmqp;
 using namespace std;
 
-Slice::Slice(Vector3D slicePlaneNormal, Vector3D slicePlaneOrigin) :
-slicePlaneNormal_(slicePlaneNormal),
-slicePlaneOrigin_(slicePlaneOrigin) { }
+Slice::Slice(const Plane & slicePlane) :
+slicePlane_(slicePlane) { }
 
 const std::vector<Island> & Slice::islands() const {
     return islands_;
 }
 
-Vector3D Slice::slicePlaneNormal() const {
-    return slicePlaneNormal_;
-}
-
-Vector3D Slice::slicePlaneOrigin() const {
-    return slicePlaneOrigin_;
+const Plane & Slice::slicePlane() const {
+    return slicePlane_;
 }
 
 void Slice::addIsland(Island island) {

@@ -18,7 +18,7 @@ namespace mapmqp {
     
     class Island {
     public:
-        Island(Polygon mainPolygon, std::vector<std::shared_ptr<const MeshFace>> p_mainPolygonMeshFaces);
+        Island(const Polygon & mainPolygon, std::vector<std::shared_ptr<const MeshFace>> p_mainPolygonMeshFaces);
         
         //getters
         const Polygon & mainPolygon();
