@@ -107,7 +107,7 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
     
     //TODO this is just temporary to return something
     for (vector<shared_ptr<Island>>::iterator it = p_islands.begin(); it != p_islands.end(); it++) {
-        ret.addIsland(**it);
+        ret.addIsland(*it);
     }
     
 //    vector<shared_ptr<Island>> finalizedIslands;

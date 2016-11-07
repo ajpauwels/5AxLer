@@ -18,27 +18,44 @@ namespace mapmqp {
     
     class Island {
     public:
+        struct Hole {
+            friend class Island;
+            
+        public:
+            Hole(Polygon holePolygon, std::vector<std::shared_ptr<const MeshFace>> p_holeMeshFaces) :
+            holePolygon_(holePolygon),
+            p_holeMeshFaces_(p_holeMeshFaces) { }
+            
+            std::shared_ptr<const Island> p_parentIsland() { return p_parentIsland_; }
+            const Polygon & holePolygon() { return holePolygon_; }
+            const std::vector<std::shared_ptr<const MeshFace>> & p_holeMeshFaces() { return p_holeMeshFaces_; }
+            const std::vector<std::shared_ptr<const Island>> & p_holeIslands() { return p_holeIslands_; }
+            
+        private:
+            std::shared_ptr<const Island> p_parentIsland_ = nullptr;
+            Polygon holePolygon_;
+            std::vector<std::shared_ptr<const MeshFace>> p_holeMeshFaces_;
+            std::vector<std::shared_ptr<const Island>> p_holeIslands_;
+        };
+        
         Island(const Polygon & mainPolygon, std::vector<std::shared_ptr<const MeshFace>> p_mainPolygonMeshFaces);
         
         //getters
         const Polygon & mainPolygon() const;
         const std::vector<std::shared_ptr<const MeshFace>> & p_mainPolygonMeshFaces() const;
-        const std::vector<Polygon> & holes() const;
-        const std::vector<std::vector<std::shared_ptr<const MeshFace>>> & p_holesMeshFaces() const;
-        const std::vector<std::vector<Island>> holeIslands() const;
+        const std::vector<std::shared_ptr<Hole>> & holes() const;
         
-        void addHole(Polygon hole, std::vector<std::shared_ptr<const MeshFace>> p_holeMeshFaces);
-        void addIslandToHole(Island island, int holeIndex);
+        void addHole(std::shared_ptr<Hole> p_hole);
+        void addIslandToHole(std::shared_ptr<const Island> p_island, unsigned int holeIndex);
         
-        std::vector<std::shared_ptr<Island>> getAllP_SubIslands(unsigned int depth);
+        //returns all islands at a certain depth (0 is this)
+        std::vector<std::shared_ptr<const Island>> getP_SubIslandsAtDepth(unsigned int depth);
         
     private:
         Polygon mainPolygon_; //polygon that represents outline of island
         std::vector<std::shared_ptr<const MeshFace>> p_mainPolygonMeshFaces_; //ptr to MeshFace on each edge of mainPolygon_, i.e. p_mainPolygonMeshFaces_[x] is the MeshFace that the xth edge of mainPolygon_ came from
         
-        std::vector<Polygon> holes_; //series of holes inside mainPolygon_
-        std::vector<std::vector<std::shared_ptr<const MeshFace>>> p_holesMeshFaces_; //same as p_mainPolygonMeshFaces_ but p_holesMeshFaces_[i][x] is for the ith hole instead of the mainPolygon_
-        std::vector<std::vector<std::shared_ptr<Island>>> p_holeIslands_; //islands inside each hole, so holeIslands_[i][j] is the jth island inside the ith hole
+        std::vector<std::shared_ptr<Hole>> holes_;
     };
 }
 

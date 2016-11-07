@@ -93,7 +93,7 @@ int main(int argc, const char * argv[]) {
 //    printf("in poly: %s\n", ClipperLib::PointInPolygon(ClipperLib::IntPoint(5, 5), poly) ? "true" : "false");
     
     Slice slice = Slicer(p_mesh).slice(Plane(Vector3D(0, 0, 1), Vector3D(0, 0, 100)));
-    slice.islands();
+    slice.p_islands();
     
     /*
      //testing build map
