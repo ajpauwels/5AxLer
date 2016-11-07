@@ -15,6 +15,7 @@
 #include "Utility.hpp"
 
 using namespace mapmqp;
+using namespace std;
 
 double Vector3D::faultTolerance_ = 0.0;
 
@@ -145,8 +146,8 @@ bool Vector3D::operator!=(const Vector3D & v) const {
     return !(*this == v);
 }
 
-std::string Vector3D::toString() const {
-    std::ostringstream stream;
+string Vector3D::toString() const {
+    ostringstream stream;
     stream << "[" << x_ << ", " << y_ << ", " << z_ << "]";
     return stream.str();
 }

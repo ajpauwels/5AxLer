@@ -9,6 +9,7 @@
 #ifndef Polygon_hpp
 #define Polygon_hpp
 
+#include <string>
 #include <vector>
 
 #include "../libs/clipper/clipper.hpp"
@@ -30,12 +31,13 @@ namespace mapmqp {
         
         double area() const;
         
-        bool pointOnPlane(const Vector3D & point) const;
         bool pointInPolygon(const Vector3D & point) const;
         
         //static member's getters/setters
         static uint64_t mappedPointPrecision();
         static void mappedPointPrecision(int mappedPointPrecision);
+        
+        std::string toString() const;
         
     private:
         std::vector<Vector3D> points_; //stored in counter-clockwise form

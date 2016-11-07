@@ -9,12 +9,20 @@
 #ifndef Plane_hpp
 #define Plane_hpp
 
+#include <string>
+
 #include "Vector3D.hpp"
 
 namespace mapmqp {
     class Plane {
     public:
-        Plane(const Vector3D & normal = Vector3D(0, 0, 0), const Vector3D & origin = Vector3D(0, 0, 0));
+        enum PLANE_POSITION {
+            ON,
+            ABOVE,
+            BELOW
+        };
+        
+        Plane(const Vector3D & normal = Vector3D(0, 0, 1), const Vector3D & origin = Vector3D(0, 0, 0)); //normal vector set as default xy plane so plane will still have a normal when initialized with default value
         
         //getters
         const Vector3D & normal() const;
@@ -24,11 +32,13 @@ namespace mapmqp {
         void normal(Vector3D normal);
         void origin(Vector3D origin);
         
-        bool pointOnPlane(const Vector3D & point) const;
+        PLANE_POSITION pointOnPlane(const Vector3D & point) const;
         
         //static member's getters/setters
         static double faultTolerance();
         static void faultTolerance(double faultTolerance);
+        
+        std::string toString() const;
         
     private:
         Vector3D normal_, origin_;

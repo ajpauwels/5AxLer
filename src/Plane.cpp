@@ -10,7 +10,10 @@
 
 #include <cmath>
 
+#include "Utility.hpp"
+
 using namespace mapmqp;
+using namespace std;
 
 double Plane::faultTolerance_ = 0.0;
 
@@ -34,8 +37,20 @@ void Plane::origin(Vector3D origin) {
     origin_ = origin;
 }
 
-bool Plane::pointOnPlane(const Vector3D & point) const {
-    return ((point == origin_) || (fabs(Vector3D::dotProduct(point - origin_, normal_)) <= Plane::faultTolerance_));
+Plane::PLANE_POSITION Plane::pointOnPlane(const Vector3D & point) const {
+    if (point == origin_) {
+        return ON;
+    }
+    
+    double dotVal = Vector3D::dotProduct(point - origin_, normal_);
+    
+    if (doubleEquals(dotVal, 0.0, faultTolerance_)) {
+        return ON;
+    } else if (dotVal > 0) {
+        return ABOVE;
+    } else {
+        return BELOW;
+    }
 }
 
 double Plane::faultTolerance() {
@@ -44,4 +59,10 @@ double Plane::faultTolerance() {
 
 void Plane::faultTolerance(double faultTolerance) {
     Plane::faultTolerance_ = faultTolerance;
+}
+
+string Plane::toString() const {
+    ostringstream stream;
+    stream << "[plane:" << normal_.toString() << ", origin:" << origin_.toString() << "]";
+    return stream.str();
 }

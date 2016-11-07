@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+//for debugging
+#include "../libs/Clipper/clipper.hpp"
 #include "Mesh.hpp"
 #include "Utility.hpp"
 #include "Clock.hpp"
@@ -25,6 +27,7 @@
 #include <cmath>
 #include <unordered_map>
 #include <string>
+#include "Slicer.hpp"
 //end debugging
 
 using namespace mapmqp;
@@ -54,46 +57,55 @@ int main(int argc, const char * argv[]) {
     // Vector3D v3(Vector3D(-10, -10, -10));
     // Vector3D v4(Vector3D(2, 4, -10));
     // Vector3D v5(Vector3D(2, 4, -10));
-
+    
     // writeLog(INFO, "v4 == v4 : %d", v4 == v5);
-
+    
     /* testing ProcessSTL */
-
-   mapmqp::ProcessSTL parser(argv[1]);
-   std::shared_ptr<mapmqp::Mesh> mesh = parser.run();
-   const std::vector<std::shared_ptr<mapmqp::MeshFace>> meshFaces = mesh->p_faces();
-   for (uint32_t i = 0; i < meshFaces.size(); ++i) {
-       const std::shared_ptr<mapmqp::MeshFace> currFace = meshFaces[i];
-
-       printf("Face vertices are:\n");
-       for (uint16_t j = 0; j < 3; ++j) {
-           printf("\t[%f, %f, %f]", currFace->p_vertex(j)->vertex().x(), currFace->p_vertex(j)->vertex().y(), currFace->p_vertex(j)->vertex().z());
-       }
-       printf("\n");
-       printf("Connected faces are:\n");
-       for (uint16_t j = 0; j < 3; ++j) {
-           printf("%d.)", j);
-           const std::shared_ptr<const mapmqp::MeshFace> connFace = currFace->p_connectedFace(j);
-           for (uint16_t k = 0; k < 3; ++k) {
-               printf("\t[%f, %f, %f]", connFace->p_vertex(k)->vertex().x(), connFace->p_vertex(k)->vertex().y(), connFace->p_vertex(k)->vertex().z());
-           }
-           printf("\n");
-       }
-       printf("\n");
-
-   }
-
+    
+    mapmqp::ProcessSTL parser(argv[1]);
+    std::shared_ptr<mapmqp::Mesh> p_mesh = parser.run();
+    const std::vector<std::shared_ptr<mapmqp::MeshFace>> meshFaces = p_mesh->p_faces();
+    for (uint32_t i = 0; i < meshFaces.size(); ++i) {
+        const std::shared_ptr<mapmqp::MeshFace> currFace = meshFaces[i];
+        
+        printf("Face vertices are:\n");
+        for (uint16_t j = 0; j < 3; ++j) {
+            printf("\t[%f, %f, %f]", currFace->p_vertex(j)->vertex().x(), currFace->p_vertex(j)->vertex().y(), currFace->p_vertex(j)->vertex().z());
+        }
+        printf("\n");
+        printf("Connected faces are:\n");
+        for (uint16_t j = 0; j < 3; ++j) {
+            printf("%d.)", j);
+            const std::shared_ptr<const mapmqp::MeshFace> connFace = currFace->p_connectedFace(j);
+            for (uint16_t k = 0; k < 3; ++k) {
+                printf("\t[%f, %f, %f]", connFace->p_vertex(k)->vertex().x(), connFace->p_vertex(k)->vertex().y(), connFace->p_vertex(k)->vertex().z());
+            }
+            printf("\n");
+        }
+        printf("\n");
+        
+    }
+    
+//    ClipperLib::Clipper clip;
+//    ClipperLib::Path poly;
+//    poly << ClipperLib::IntPoint(0, 0) << ClipperLib::IntPoint(0, 10) << ClipperLib::IntPoint(10, 10) << ClipperLib::IntPoint(10, 0);
+//    printf("area: %f\n", ClipperLib::Area(poly));
+//    printf("in poly: %s\n", ClipperLib::PointInPolygon(ClipperLib::IntPoint(5, 5), poly) ? "true" : "false");
+    
+    Slice slice = Slicer(p_mesh).slice(Plane(Vector3D(0, 0, 1), Vector3D(0, 0, 100)));
+    slice.p_islands();
+    
     /*
-    //testing build map
-    srand(16);
-    mapmqp::Clock timer;
-    
-#define THETA_POLE M_PI
-#define PHI_POLE (M_PI / 2)
-#define VECTOR_DIVERGENCE M_PI_2
-#define MAX_AREA 40.0
-    
-#define n 200000
+     //testing build map
+     srand(16);
+     mapmqp::Clock timer;
+     
+     #define THETA_POLE M_PI
+     #define PHI_POLE (M_PI / 2)
+     #define VECTOR_DIVERGENCE M_PI_2
+     #define MAX_AREA 40.0
+     
+     #define n 200000
      
      mapmqp::Vector3D faceNormals[n];
      double faceAreas[n];

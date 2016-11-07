@@ -25,26 +25,36 @@ const vector<shared_ptr<const MeshFace>> & Island::p_mainPolygonMeshFaces() cons
     return p_mainPolygonMeshFaces_;
 }
 
-const vector<Polygon> & Island::holes() const {
+const vector<shared_ptr<Island::Hole>> & Island::holes() const {
     return holes_;
 }
 
-const vector<vector<shared_ptr<const MeshFace>>> & Island::p_holesMeshFaces() const {
-    return p_holesMeshFaces_;
+void Island::addHole(shared_ptr<Hole> p_hole) {
+    p_hole->p_parentIsland_ = shared_ptr<const Island>(this);
+    holes_.push_back(p_hole);
 }
 
-void Island::addHole(Polygon hole, vector<shared_ptr<const MeshFace>> p_holeMeshFaces) {
-    holes_.push_back(hole);
-    p_holesMeshFaces_.push_back(p_holeMeshFaces);
-    holeIslands_.resize(holes_.size());
-}
-
-void Island::addIslandToHole(Island island, int holeIndex) {
-    if (holeIndex < 0) {
-        writeLog(WARNING, "attempting to add island to hole with index less than 0");
-    } else if (holeIndex >= holeIslands_.size()) {
+void Island::addIslandToHole(shared_ptr<const Island> p_island, unsigned int holeIndex) {
+    if (holeIndex >= holes_.size()) {
         writeLog(WARNING, "attempting to add island to hole index that does not exist");
     } else {
-        holeIslands_[holeIndex].push_back(island);
+        holes_[holeIndex]->p_holeIslands_.push_back(p_island);
     }
+}
+
+vector<shared_ptr<const Island>> Island::getP_SubIslandsAtDepth(unsigned int depth) {
+    vector<shared_ptr<const Island>> ret;
+    
+    if (depth == 0) {
+        ret.push_back(shared_ptr<const Island>(this));
+        return ret;
+    }
+    
+    for (vector<shared_ptr<Island::Hole>>::const_iterator it = holes_.begin(); it != holes_.end(); it++) {
+        for (vector<shared_ptr<const Island>>::const_iterator subIt = (*it)->p_holeIslands_.begin(); subIt != (*it)->p_holeIslands_.end(); subIt++) {
+            ret.push_back(*subIt);
+        }
+    }
+    
+    return ret;
 }
