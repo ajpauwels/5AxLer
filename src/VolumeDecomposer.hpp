@@ -26,4 +26,4 @@ namespace mapmqp {
 	};
 }
 
-#endif
+#endif /* VolumeDecomposer_hpp */

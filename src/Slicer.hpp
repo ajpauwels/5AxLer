@@ -7,15 +7,35 @@
  * Copyright © 2016 MAP MQP. All rights reserved.
  */
 
+#ifndef Slicer_hpp
+#define Slicer_hpp
+
+#include <memory>
+
+#include "Plane.hpp"
+#include "Mesh.hpp"
+
 namespace mapmqp {
 	// Class definition
 	class Slicer {
 	public:
 		// Constructor
-		Slicer::Slicer();
+        Slicer(std::shared_ptr<const Mesh> p_mesh);
 
 		// Slice iterator
+        Slice slice(const Plane & plane) const;
 
 	private:
+        //functions
+        
+        //slice plane with limited search space
+        //returns slice and vector of ptrs to MeshFace that contained slice
+        std::pair<Slice, std::vector<std::shared_ptr<const MeshFace>>> slice(const Plane & plane, const std::vector<std::shared_ptr<const MeshFace>> & p_facesSearchSpace) const;
+        
+        //variables
+        
+        std::shared_ptr<const Mesh> p_mesh_;
 	};
 }
+
+#endif /* Slicer_hpp */

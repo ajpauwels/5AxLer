@@ -20,13 +20,13 @@ namespace mapmqp {
         Slice(const Plane & slicePlane);
         
         const Plane & slicePlane() const;
-        const std::vector<Island> & islands() const;
+        const std::vector<std::shared_ptr<const Island>> & p_islands() const;
         
-        void addIsland(Island island);
+        void addIsland(std::shared_ptr<const Island> p_island);
         
     private:
         Plane slicePlane_;
-        std::vector<Island> islands_;
+        std::vector<std::shared_ptr<const Island>> p_islands_;
     };
 }
 

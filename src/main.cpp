@@ -27,6 +27,7 @@
 #include <cmath>
 #include <unordered_map>
 #include <string>
+#include "Slicer.hpp"
 //end debugging
 
 using namespace mapmqp;
@@ -62,8 +63,8 @@ int main(int argc, const char * argv[]) {
     /* testing ProcessSTL */
     
     mapmqp::ProcessSTL parser(argv[1]);
-    std::shared_ptr<mapmqp::Mesh> mesh = parser.run();
-    const std::vector<std::shared_ptr<mapmqp::MeshFace>> meshFaces = mesh->p_faces();
+    std::shared_ptr<mapmqp::Mesh> p_mesh = parser.run();
+    const std::vector<std::shared_ptr<mapmqp::MeshFace>> meshFaces = p_mesh->p_faces();
     for (uint32_t i = 0; i < meshFaces.size(); ++i) {
         const std::shared_ptr<mapmqp::MeshFace> currFace = meshFaces[i];
         
@@ -91,7 +92,7 @@ int main(int argc, const char * argv[]) {
 //    printf("area: %f\n", ClipperLib::Area(poly));
 //    printf("in poly: %s\n", ClipperLib::PointInPolygon(ClipperLib::IntPoint(5, 5), poly) ? "true" : "false");
     
-    Slice slice = mesh->slice(Plane(Vector3D(0, 0, 1), Vector3D(0, 0, 100)));
+    Slice slice = Slicer(p_mesh).slice(Plane(Vector3D(0, 0, 1), Vector3D(0, 0, 100)));
     slice.islands();
     
     /*

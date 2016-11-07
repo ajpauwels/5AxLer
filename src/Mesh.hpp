@@ -37,9 +37,6 @@ namespace mapmqp {
         void addVertex(std::shared_ptr<MeshVertex> p_vertex);
         void addFace(std::shared_ptr<MeshFace> p_face);
         
-        Slice slice(const Plane & plane) const;
-        Slice slice(const Plane & plane, const std::vector<std::shared_ptr<const MeshFace>> & p_facesSearchSpace) const;
-        
     private:
         
         std::vector<std::shared_ptr<MeshVertex>> p_vertices_;
