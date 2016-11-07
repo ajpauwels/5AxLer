@@ -9,8 +9,9 @@
 #ifndef Vector3D_hpp
 #define Vector3D_hpp
 
-#include "Angle.hpp"
 #include <string>
+
+#include "Angle.hpp"
 
 namespace mapmqp {
     class Vector3D {

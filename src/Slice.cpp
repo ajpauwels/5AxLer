@@ -14,12 +14,12 @@ using namespace std;
 Slice::Slice(const Plane & slicePlane) :
 slicePlane_(slicePlane) { }
 
-const std::vector<Island> & Slice::islands() const {
-    return islands_;
-}
-
 const Plane & Slice::slicePlane() const {
     return slicePlane_;
+}
+
+const std::vector<Island> & Slice::islands() const {
+    return islands_;
 }
 
 void Slice::addIsland(Island island) {

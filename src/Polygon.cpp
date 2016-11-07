@@ -94,7 +94,6 @@ double Polygon::area() const {
     return clipperArea / mappedPointPrecisionSquared;
 }
 
-
 bool Polygon::pointInPolygon(const Vector3D & point) const {
     Vector3D mappedPoint = mapPointToXYPlane(point);
     return ClipperLib::PointInPolygon(ClipperLib::IntPoint((int)(mappedPoint.x() * mappedPointPrecision_), (int)(mappedPoint.y() * mappedPointPrecision_)), polygonXYPlane_);
@@ -106,4 +105,18 @@ uint64_t Polygon::mappedPointPrecision() {
 
 void Polygon::mappedPointPrecision(int mappedPointPrecision) {
     Polygon::mappedPointPrecision_ = mappedPointPrecision;
+}
+
+string Polygon::toString() const {
+    ostringstream stream;
+    stream << "[";
+    bool addComma = false;
+    for (vector<Vector3D>::const_iterator it = points_.begin(); it != points_.end(); it++) {
+        if (addComma) {
+            stream << ", ";
+        }
+        stream << it->toString();
+        addComma = true;
+    }
+    return stream.str();
 }

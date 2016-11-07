@@ -18,6 +18,7 @@
 #include "Vector3D.hpp"
 #include "Polygon.hpp"
 #include "Island.hpp"
+#include "Slice.hpp"
 
 namespace mapmqp {
     //forward declarations to use pointers
@@ -36,7 +37,8 @@ namespace mapmqp {
         void addVertex(std::shared_ptr<MeshVertex> p_vertex);
         void addFace(std::shared_ptr<MeshFace> p_face);
         
-        std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>> planeIntersection(const Plane & plane, std::vector<std::shared_ptr<const MeshFace>> p_faces) const;
+        Slice slice(const Plane & plane) const;
+        Slice slice(const Plane & plane, const std::vector<std::shared_ptr<const MeshFace>> & p_facesSearchSpace) const;
         
     private:
         
@@ -60,6 +62,8 @@ namespace mapmqp {
         // Adds a face to the vector of connected faces
         void addConnectedFace(std::shared_ptr<MeshFace> p_face);
         
+        std::string toString() const;
+        
     private:
         Vector3D vertex_;
         std::vector<std::shared_ptr<const MeshFace>> p_faces_; //all faces that have this vertex as a vertex
@@ -78,6 +82,8 @@ namespace mapmqp {
 
         // Getters
         const std::shared_ptr<const MeshVertex> p_vertex(uint16_t v) const;
+        
+        std::string toString() const;
 
         // Operator overloads
         bool operator==(const MeshEdge & edge) const;
@@ -111,6 +117,8 @@ namespace mapmqp {
 
         // Get the edge index of the two given vertices
         int16_t getEdgeIndex(std::shared_ptr<MeshEdge> p_edge);
+        
+        std::string toString() const;
 
         // Operator overloads
         bool operator==(const MeshFace & face) const;

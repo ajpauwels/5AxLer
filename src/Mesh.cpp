@@ -106,16 +106,36 @@ struct TripleP_MeshVertexHash {
     }
 };
 
-std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>> Mesh::planeIntersection(const Plane & plane, vector<shared_ptr<const MeshFace>> p_faces) const {
-    vector<Island> islands;
+Slice Mesh::slice(const Plane & plane) const {
+    //TODO is this a good way to do this?
+    vector<shared_ptr<const MeshFace>> p_faces;
+    for (vector<shared_ptr<MeshFace>>::const_iterator it = p_faces_.begin(); it != p_faces_.end(); it++) {
+        p_faces.push_back(*it);
+    }
+    return slice(plane, p_faces);
+}
+
+Slice Mesh::slice(const Plane & plane, const vector<shared_ptr<const MeshFace>> & p_facesSearchSpace) const {
+    Slice ret(plane);
     vector<shared_ptr<const MeshFace>> p_intersectingFaces;
     
     unordered_map<tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>, shared_ptr<const MeshFace>, TripleP_MeshVertexHash> mapped_p_checkedFaces;
     
-    for (vector<shared_ptr<const MeshFace>>::iterator it = p_faces.begin(); it != p_faces.end(); it++) {
-        if ((mapped_p_checkedFaces.find(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>((*it)->p_vertex(0), (*it)->p_vertex(1), (*it)->p_vertex(2))) == mapped_p_checkedFaces.end()) //face has already been evaluated
-            || (!((*it)->intersectsPlane(plane))) //face does not intersect plane
-            || ((*it)->liesOnPlane(plane))) {
+    //list of islands pre-ordering
+    vector<shared_ptr<Island>> p_islands;
+    //list of hole polygons and corresponding MeshFaces
+    vector<pair<Polygon, vector<shared_ptr<const MeshFace>>>> holes;
+    
+    for (vector<shared_ptr<const MeshFace>>::const_iterator it = p_facesSearchSpace.begin(); it != p_facesSearchSpace.end(); it++) {
+        shared_ptr<const MeshFace> p_face = *it;
+        
+        printf("slicing MeshFace: %s\n", p_face->toString().c_str());
+        
+        if ((mapped_p_checkedFaces.size() > 0) && (mapped_p_checkedFaces.find(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>(p_face->p_vertex(0), p_face->p_vertex(1), p_face->p_vertex(2))) != mapped_p_checkedFaces.end())) { //face has already been evaluated
+            continue;
+        } else if (!(p_face->intersectsPlane(plane))) { //face does not intersect plane
+            continue;
+        } else if (p_face->liesOnPlane(plane)) {
             continue;
         }
         
@@ -125,9 +145,8 @@ std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>> Mes
         
         //TODO determine somehow if polygon is hole inside of other polygon
         
-        shared_ptr<const MeshFace> p_startFace = *it;
+        shared_ptr<const MeshFace> p_startFace = p_face;
         shared_ptr<const MeshFace> p_currentFace = p_startFace;
-        shared_ptr<const MeshFace> p_nextFace = nullptr;
         
         do {
             //add ptr to MeshFace to list of checked faces
@@ -136,31 +155,158 @@ std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>> Mes
             //add ptr to MeshFace to hashtable of intersection faces
             p_intersectingFaces.push_back(p_currentFace);
             
-            //add first point of face intersection to list of polygon points
-            polygonPoints.push_back(p_currentFace->planeIntersection(plane).first);
-            p_polygonMeshFaces.push_back(p_currentFace);
-            
             pair<Vector3D, Vector3D> intersectionLine = p_currentFace->planeIntersection(plane);
             
+            //add first point of face intersection to list of polygon points
+            polygonPoints.push_back(intersectionLine.first);
+            p_polygonMeshFaces.push_back(p_currentFace);
+            
             //determine which edge of face is next
-            if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(0)->vertex_, intersectionLine.second - p_currentFace->p_vertex(1)->vertex_).magnitude() == 0) {
-                p_nextFace->p_connectedFace(0);
-            } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(1)->vertex_, intersectionLine.second - p_currentFace->p_vertex(2)->vertex_).magnitude() == 0) {
-                p_nextFace->p_connectedFace(1);
-            } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(2)->vertex_, intersectionLine.second - p_currentFace->p_vertex(0)->vertex_).magnitude() == 0) {
-                p_nextFace->p_connectedFace(2);
+            if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(0)->vertex_, p_currentFace->p_vertex(1)->vertex_ - p_currentFace->p_vertex(0)->vertex_).magnitude() == 0) {
+                p_currentFace = p_currentFace->p_connectedFace(0);
+            } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(1)->vertex_, p_currentFace->p_vertex(2)->vertex_ - p_currentFace->p_vertex(1)->vertex_).magnitude() == 0) {
+                p_currentFace = p_currentFace->p_connectedFace(1);
+            } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(2)->vertex_, p_currentFace->p_vertex(0)->vertex_ - p_currentFace->p_vertex(2)->vertex_).magnitude() == 0) {
+                p_currentFace = p_currentFace->p_connectedFace(2);
             }
             
-            if (!p_nextFace) {
+            if (!p_currentFace) {
                 writeLog(ERROR, "connected face to face being sliced is nullptr");
                 break;
             }
-        } while (p_nextFace != p_startFace);
+        } while (p_currentFace != p_startFace);
         
-        islands.push_back(Island(Polygon(polygonPoints), p_polygonMeshFaces));
+        Polygon poly(polygonPoints);
+        if (poly.area() < 0) { //polygon is a hole
+            holes.push_back(pair<Polygon, vector<shared_ptr<const MeshFace>>>(poly, p_polygonMeshFaces));
+        } else {
+            p_islands.push_back(shared_ptr<Island>(new Island(poly, p_polygonMeshFaces)));
+        }
     }
     
-    return std::pair<std::vector<Island>, std::vector<std::shared_ptr<const MeshFace>>>(islands, p_intersectingFaces);
+    //all islands and holes found
+    
+    //place islands in holes
+    
+    vector<shared_ptr<Island>> finalizedIslands;
+    
+    vector<shared_ptr<Island>> searchSpace;
+    //TODO can this just be set to = p_islands?
+    for (vector<shared_ptr<Island>>::iterator it = p_islands.begin(); it != p_islands.end(); it++) {
+        searchSpace.push_back(*it);
+    }
+    
+    int depth = 0;
+    while (holes.size() > 0) {
+        if (searchSpace.size() == 0) {
+            printf("SEARCH SPACE IS 0\n");
+        }
+        
+        vector<vector<shared_ptr<Island>>::iterator> p_topLevelPolysIterators;
+        vector<vector<pair<Polygon, vector<shared_ptr<const MeshFace>>>>::iterator> topLevelHolePolyIterators; //holes that are only a subset of one island at level being evaluated - to be removed from holePolygons
+        
+        for (vector<pair<Polygon, vector<shared_ptr<const MeshFace>>>>::iterator holeIt = holes.begin(); holeIt != holes.end(); holeIt++) {
+            vector<vector<shared_ptr<Island>>::iterator> enclosingIslandIterators; //islands that contain hole
+            
+            for (vector<shared_ptr<Island>>::iterator islandIt = searchSpace.begin(); islandIt != searchSpace.end(); islandIt++) {
+                if ((*islandIt)->mainPolygon().pointInPolygon(holeIt->first.points()[0])) { //polygon contains hole
+                    enclosingIslandIterators.push_back(islandIt);
+                }
+            }
+            
+            if (enclosingIslandIterators.size() == 0) {
+                writeLog(ERROR, "hole exists that is not enclosed by an Island");
+            } else if (enclosingIslandIterators.size() == 1) {
+                shared_ptr<Island> p_island = *(enclosingIslandIterators[0]);
+                
+                //add hole to island
+                p_island->addHole(holeIt->first, holeIt->second);
+                
+                //if island does not already have hole, add it to list of top level islands
+                bool inList = false;
+                for (vector<vector<shared_ptr<Island>>::iterator>::iterator it = p_topLevelPolysIterators.begin(); it != p_topLevelPolysIterators.end(); it++) {
+                    inList |= (*it == enclosingIslandIterators[0]);
+                }
+                if (!inList) {
+                    p_topLevelPolysIterators.push_back(enclosingIslandIterators[0]);
+                    if (depth == 0) {
+                        finalizedIslands.push_back(p_island);
+                    }
+                }
+                
+                //add hole to list of top level island holes
+                topLevelHolePolyIterators.push_back(holeIt);
+            }
+        }
+        
+        //remove all islands with holes added from list of islands
+        for (vector<vector<shared_ptr<Island>>::iterator>::iterator it = p_topLevelPolysIterators.begin(); it != p_topLevelPolysIterators.end(); it++) {
+            searchSpace.erase(*it);
+        }
+        //remove all top level holes from hole polygons list
+        for (vector<vector<pair<Polygon, vector<shared_ptr<const MeshFace>>>>::iterator>::iterator it = topLevelHolePolyIterators.begin(); it != topLevelHolePolyIterators.end(); it++) {
+            holes.erase(*it);
+        }
+        
+        if (depth == 0) {
+            //cycle through remaining polygons and check to see if they are inside
+            //if poly is not in any holes then it is a top level island
+            vector<shared_ptr<Island>> newSearchSpace;
+            for (vector<shared_ptr<Island>>::iterator it = searchSpace.begin(); it != searchSpace.end(); it++) {
+                shared_ptr<Island> p_poly = *it;
+                
+                bool inHole = false;
+                for (vector<vector<shared_ptr<Island>>::iterator>::iterator subIt = p_topLevelPolysIterators.begin(); subIt != p_topLevelPolysIterators.end(); subIt++) { //check every polygon with a hole if it contains polygon in it's hole
+                    shared_ptr<Island> p_topLevelPoly = **subIt;
+                    
+                    //if polygon lies in hole of top level polygon, keep in search space
+                    for (vector<Polygon>::const_iterator holeIt = p_topLevelPoly->holes().begin(); holeIt != p_topLevelPoly->holes().end(); holeIt++) {
+                        if (holeIt->pointInPolygon(p_poly->mainPolygon().points()[0])) {
+                            inHole = true;
+                            //TODO place polygon in holeo
+                            break;
+                        }
+                    }
+                    if (inHole) {
+                        break;
+                    }
+                }
+                
+                if (!inHole) {
+                    finalizedIslands.push_back(p_poly);
+                } else {
+                    newSearchSpace.push_back(p_poly);
+                }
+            }
+            searchSpace = newSearchSpace;
+        } else {
+            vector<shared_ptr<Island>> newSearchSpace;
+            
+            vector<shared_ptr<Island>> p_islandsToCheck;
+            for (vector<shared_ptr<Island>>::iterator it = finalizedIslands.begin(); it != finalizedIslands.end(); it++) {
+                vector<shared_ptr<Island>> p_subIslands = (*it)->getAllP_SubIslands(depth);
+                for (vector<shared_ptr<Island>>::iterator subIt = p_subIslands.begin(); subIt != p_subIslands.end(); subIt++) {
+                    p_islandsToCheck.push_back(*subIt);
+                }
+            }
+            
+            if (holes.size() == 0) {
+                for (vector<shared_ptr<Island>>::iterator it = searchSpace.begin(); it != searchSpace.end(); it++) {
+                    
+                }
+            } else {
+                for (vector<vector<shared_ptr<Island>>::iterator>::iterator it = p_topLevelPolysIterators.begin(); it != searchSpace.end(); it++) {
+                    for (vector<shared_ptr<Island>>::iterator subIt = p_islandsToCheck.begin(); subIt != p_islandsToCheck.end(); subIt++) {
+                        //for (vector<Polygon>)
+                    }
+                }
+            }
+            
+            searchSpace = newSearchSpace;
+        }
+    }
+    
+    return ret;
 }
 
 //MeshVertex class functions
@@ -178,6 +324,10 @@ Vector3D MeshVertex::vertex() const {
 
 const vector<shared_ptr<const MeshFace>> & MeshVertex::p_faces() const {
     return p_faces_;
+}
+
+string MeshVertex::toString() const {
+    return vertex_.toString();
 }
 
 //MeshEdge class functions
@@ -262,6 +412,12 @@ const shared_ptr<const MeshVertex> MeshEdge::p_vertex(uint16_t v) const {
  */
 bool MeshEdge::operator==(const MeshEdge & edge) const {
     return p_vertices_[0]->vertex() == edge.p_vertex(0)->vertex() && p_vertices_[1]->vertex() == edge.p_vertex(1)->vertex();
+}
+
+string MeshEdge::toString() const {
+    ostringstream stream;
+    stream << "[" << p_vertices_[0]->toString() << ", " << p_vertices_[1]->toString() << "]";
+    return stream.str();
 }
 
 //MeshFace class functions
@@ -383,14 +539,16 @@ int16_t MeshFace::getEdgeIndex(shared_ptr<MeshEdge> p_edge) {
 }
 
 bool MeshFace::intersectsPlane(const Plane & plane) const {
-    double v1Val = Vector3D::dotProduct(plane.normal(), p_vertices_[0]->vertex() - plane.origin());
-    double v2Val = Vector3D::dotProduct(plane.normal(), p_vertices_[1]->vertex() - plane.origin());
-    double v3Val = Vector3D::dotProduct(plane.normal(), p_vertices_[2]->vertex() - plane.origin());
-    if ((v1Val == 0) || (v2Val == 0) || (v3Val == 0)) { //if any point lies exactly on plane, face intersects
+    Plane::PLANE_POSITION vertexPos[3];
+    vertexPos[0] = plane.pointOnPlane(p_vertices_[0]->vertex());
+    vertexPos[1] = plane.pointOnPlane(p_vertices_[1]->vertex());
+    vertexPos[2] = plane.pointOnPlane(p_vertices_[2]->vertex());
+    
+    if ((vertexPos[0] == Plane::ON) || (vertexPos[1] == Plane::ON) || (vertexPos[2] == Plane::ON)) { //if any point lies exactly on plane, face intersects
         return true;
-    } else if ((v1Val < 0) && (v2Val < 0) && (v3Val < 0)) { //if all points lie below plane, face does not intersect
+    } else if ((vertexPos[0] == Plane::BELOW) && (vertexPos[1] == Plane::BELOW) && (vertexPos[2] == Plane::BELOW)) { //if all points lie below plane, face does not intersect
         return false;
-    } else if ((v1Val < 0) && (v2Val < 0) && (v3Val < 0)) { //if all points lie above plane, face does not intersect
+    } else if ((vertexPos[0] == Plane::ABOVE) && (vertexPos[1] == Plane::ABOVE) && (vertexPos[2] == Plane::ABOVE)) { //if all points lie above plane, face does not intersect
         return false;
     } else { //any other possibility means face intersects
         return true;
@@ -402,11 +560,12 @@ Vector3D MeshFace::p_normal(){
 }
 
 bool MeshFace::liesOnPlane(const Plane & plane) const {
-    double v1Val = Vector3D::dotProduct(plane.normal(), p_vertices_[0]->vertex() - plane.origin());
-    double v2Val = Vector3D::dotProduct(plane.normal(), p_vertices_[1]->vertex() - plane.origin());
-    double v3Val = Vector3D::dotProduct(plane.normal(), p_vertices_[2]->vertex() - plane.origin());
+    Plane::PLANE_POSITION vertexPos[3];
+    vertexPos[0] = plane.pointOnPlane(p_vertices_[0]->vertex());
+    vertexPos[1] = plane.pointOnPlane(p_vertices_[1]->vertex());
+    vertexPos[2] = plane.pointOnPlane(p_vertices_[2]->vertex());
     
-    if ((v1Val == 0) && (v2Val == 0) && (v3Val == 0)) { //if every point lies exactly on plane
+    if ((vertexPos[0] == Plane::ON) && (vertexPos[1] == Plane::ON) && (vertexPos[2] == Plane::ON)) { //if any point lies exactly on plane, face intersects
         return true;
     } else {
         return false;
@@ -414,7 +573,7 @@ bool MeshFace::liesOnPlane(const Plane & plane) const {
 }
 
 pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Plane & plane) const {
-    if (intersectsPlane(plane)) {
+    if (!intersectsPlane(plane)) {
         writeLog(WARNING, "attempted to find intersection line of MeshFace with plane that does not intersect");
         return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
     } else if (liesOnPlane(plane)) {
@@ -422,40 +581,71 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Plane & plane) const 
         return pair<Vector3D, Vector3D>(Vector3D(0, 0, 0), Vector3D(0, 0, 0));
     }
     
-    double v1Val = Vector3D::dotProduct(plane.normal(), p_vertices_[0]->vertex() - plane.origin());
-    double v2Val = Vector3D::dotProduct(plane.normal(), p_vertices_[1]->vertex() - plane.origin());
-    double v3Val = Vector3D::dotProduct(plane.normal(), p_vertices_[2]->vertex() - plane.origin());
+    Plane::PLANE_POSITION vertexPos[3];
+    vertexPos[0] = plane.pointOnPlane(p_vertices_[0]->vertex());
+    vertexPos[1] = plane.pointOnPlane(p_vertices_[1]->vertex());
+    vertexPos[2] = plane.pointOnPlane(p_vertices_[2]->vertex());
     
-    //if two vertices lie of plane, return edge between vertices
-    //TODO determine which order vertices should be placed in pair
-    if ((v1Val == 0) && (v2Val == 0)) {
-        return pair<Vector3D, Vector3D>(p_vertex(0)->vertex(), p_vertex(1)->vertex());
-    } else if ((v1Val == 0) && (v3Val == 0)) {
-        return pair<Vector3D, Vector3D>(p_vertex(0)->vertex(), p_vertex(2)->vertex());
-    } else if ((v2Val == 0) && (v3Val == 0)) {
-        return pair<Vector3D, Vector3D>(p_vertex(1)->vertex(), p_vertex(2)->vertex());
+    //check if any vertices lie on plane
+    if (vertexPos[0] == Plane::ON) { //first vertex lies on plane
+        if (vertexPos[1] == Plane::ON) { //second vertex lies on plane
+            //order of vertices depends in third vertex is above or below plane
+            if (vertexPos[2] == Plane::ABOVE) {
+                return pair<Vector3D, Vector3D>(p_vertices_[0]->vertex(), p_vertices_[1]->vertex());
+            } else { //vertexPos[2] cannot be on plane
+                return pair<Vector3D, Vector3D>(p_vertices_[1]->vertex(), p_vertices_[0]->vertex());
+            }
+        } else if (vertexPos[2] == Plane::ABOVE) {
+            if (vertexPos[1] == Plane::ABOVE) {
+                return pair<Vector3D, Vector3D>(p_vertices_[2]->vertex(), p_vertices_[0]->vertex());
+            } else {
+                return pair<Vector3D, Vector3D>(p_vertices_[0]->vertex(), p_vertices_[2]->vertex());
+            }
+        } else {
+            return pair<Vector3D, Vector3D>(p_vertices_[0]->vertex(), p_vertices_[0]->vertex());
+        }
+    } else if (vertexPos[1] == Plane::ON) {
+        //vertexPos[0] cannot be on plane
+        if (vertexPos[2] == Plane::ON) {
+            if (vertexPos[0] == Plane::ABOVE) {
+                return pair<Vector3D, Vector3D>(p_vertices_[1]->vertex(), p_vertices_[2]->vertex());
+            } else {
+                return pair<Vector3D, Vector3D>(p_vertices_[2]->vertex(), p_vertices_[1]->vertex());
+            }
+        } else {
+            return pair<Vector3D, Vector3D>(p_vertices_[1]->vertex(), p_vertices_[1]->vertex());
+        }
+    } else if (vertexPos[2] == Plane::ON) {
+        return pair<Vector3D, Vector3D>(p_vertices_[2]->vertex(), p_vertices_[1]->vertex());
     }
     
-    //using method described in stackoverflow post: http://math.stackexchange.com/questions/100439/determine-where-a-vector-will-intersect-a-plane
+    //no vertices lie on plane
     
     Vector3D p0, p1, p2; //p0 is on opposite side of plane as p1 and p2
+    Plane::PLANE_POSITION p0Pos;
+    
     //set p0 to whichever vertex is on opposite side as other vertices
-    if (((v1Val <= 0) && (v2Val > 0) && (v3Val > 0)) || ((v1Val >= 0) && (v2Val < 0) && (v3Val < 0))) { //v1 is on side by itself
+    if (vertexPos[1] == vertexPos[2]) { //v0 is on side by itself
         p0 = p_vertex(0)->vertex();
         p1 = p_vertex(1)->vertex();
         p2 = p_vertex(2)->vertex();
-    } else if (((v2Val <= 0) && (v1Val > 0) && (v3Val > 0)) || ((v2Val >= 0) && (v1Val < 0) && (v3Val < 0))) { //v2 is on side by itself
+        p0Pos = vertexPos[0];
+    } else if (vertexPos[0] == vertexPos[2]) { //v1 is on side by itself
         p0 = p_vertex(1)->vertex();
-        p1 = p_vertex(0)->vertex();
-        p2 = p_vertex(2)->vertex();
-    } else if (((v3Val <= 0) && (v1Val > 0) && (v2Val > 0)) || ((v3Val >= 0) && (v1Val < 0) && (v2Val < 0))) { //v3 is on side by itself
+        p1 = p_vertex(2)->vertex();
+        p2 = p_vertex(0)->vertex();
+        p0Pos = vertexPos[1];
+    } else if (vertexPos[0] == vertexPos[1]) { //v2 is on side by itself
         p0 = p_vertex(2)->vertex();
         p1 = p_vertex(0)->vertex();
         p2 = p_vertex(1)->vertex();
+        p0Pos = vertexPos[2];
     }
     
     Vector3D p01 = p1 - p0;
     Vector3D p02 = p2 - p0;
+    
+    //determine intersection using method from http://geomalgorithms.com/a05-_intersect-1.html
     
     double t01 = Vector3D::dotProduct(plane.normal(), plane.origin() - p0) / Vector3D::dotProduct(plane.normal(), p01);
     double t02 = Vector3D::dotProduct(plane.normal(), plane.origin() - p0) / Vector3D::dotProduct(plane.normal(), p02);
@@ -470,10 +660,18 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Plane & plane) const 
     
     //set intersection points to edge vectors with length of t1/t2
     Vector3D intersect01 = p01, intersect02 = p02;
-    intersect01.normalize(t01);
-    intersect02.normalize(t02);
+    intersect01 = p0 + (intersect01 * t01);
+    intersect02 = p0 + (intersect02 * t02);
     
-    //TODO order these
-    
-    return pair<Vector3D, Vector3D>(intersect01, intersect02);
+    if (p0Pos == Plane::ABOVE) {
+        return pair<Vector3D, Vector3D>(intersect01, intersect02);
+    } else {
+        return pair<Vector3D, Vector3D>(intersect02, intersect01);
+    }
+}
+
+string MeshFace::toString() const {
+    ostringstream stream;
+    stream << "[" << p_vertices_[0]->toString() << ", " << p_vertices_[1]->toString() << ", " << p_vertices_[2]->toString() << "]";
+    return stream.str();
 }

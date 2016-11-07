@@ -19,14 +19,14 @@ namespace mapmqp {
     public:
         Slice(const Plane & slicePlane);
         
-        const std::vector<Island> & islands() const;
         const Plane & slicePlane() const;
+        const std::vector<Island> & islands() const;
         
         void addIsland(Island island);
         
     private:
-        std::vector<Island> islands_;
         Plane slicePlane_;
+        std::vector<Island> islands_;
     };
 }
 
