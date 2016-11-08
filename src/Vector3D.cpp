@@ -17,95 +17,95 @@
 using namespace mapmqp;
 using namespace std;
 
-double Vector3D::faultTolerance_ = 0.0;
+double Vector3D::s_faultTolerance = 0.0;
 
 Vector3D::Vector3D(double x, double y, double z, bool unitVector) :
-x_(x),
-y_(y),
-z_(z) {
+m_x(x),
+m_y(y),
+m_z(z) {
     if (unitVector) {
         normalize();
     }
 }
 
 Vector3D::Vector3D(Angle theta, Angle phi, double r) :
-x_(r * phi.sinVal() * theta.cosVal()),
-y_(r * phi.sinVal() * theta.sinVal()),
-z_(r * phi.cosVal()) { }
+m_x(r * phi.sinVal() * theta.cosVal()),
+m_y(r * phi.sinVal() * theta.sinVal()),
+m_z(r * phi.cosVal()) { }
 
 double Vector3D::x() const {
-    return x_;
+    return m_x;
 }
 
 double Vector3D::y() const {
-    return y_;
+    return m_y;
 }
 
 double Vector3D::z() const {
-    return z_;
+    return m_z;
 }
 
 Angle Vector3D::theta() const {
-    return Angle(atan2(y_, x_));
+    return Angle(atan2(m_y, m_x));
 }
 
 Angle Vector3D::phi() const {
-    double xyDistance = sqrt(x_ * x_ + y_ * y_);
+    double xyDistance = sqrt(m_x * m_x + m_y * m_y);
     if (xyDistance == 0) {
-        return (z_ < 0) ? Angle(-M_PI) : Angle(0);
+        return (m_z < 0) ? Angle(-M_PI) : Angle(0);
     } else {
-        return Angle(atan2(sqrt(x_ * x_ + y_ * y_), z_));
+        return Angle(atan2(sqrt(m_x * m_x + m_y * m_y), m_z));
     }
 }
 
 double Vector3D::magnitude() const {
-    return sqrt(x_ * x_ + y_ * y_ + z_ * z_);
+    return sqrt(m_x * m_x + m_y * m_y + m_z * m_z);
 }
 
 double Vector3D::faultTolerance() {
-    return Vector3D::faultTolerance_;
+    return Vector3D::s_faultTolerance;
 }
 
 void Vector3D::x(double x) {
-    x_ = x;
+    m_x = x;
 }
 
 void Vector3D::y(double y) {
-    y_ = y;
+    m_y = y;
 }
 
 void Vector3D::z(double z) {
-    z_ = z;
+    m_z = z;
 }
 
 void Vector3D::theta(Angle theta) {
     double r = magnitude();
     Angle phi = this->phi();
-    x_ = r * phi.sinVal() * theta.cosVal();
-    y_ = r * phi.sinVal() * theta.sinVal();
+    m_x = r * phi.sinVal() * theta.cosVal();
+    m_y = r * phi.sinVal() * theta.sinVal();
 }
 
 void Vector3D::phi(Angle phi) {
     double r = magnitude();
     Angle theta = this->theta();
-    x_ = r * phi.sinVal() * theta.cosVal();
-    y_ = r * phi.sinVal() * theta.sinVal();
-    z_ = r * phi.cosVal();
+    m_x = r * phi.sinVal() * theta.cosVal();
+    m_y = r * phi.sinVal() * theta.sinVal();
+    m_z = r * phi.cosVal();
 }
 
 void Vector3D::normalize(double value) {
     double magnitude = this->magnitude();
     if (magnitude != 0) {
-        x_ = x_ * value / magnitude;
-        y_ = y_ * value / magnitude;
-        z_ = z_ * value / magnitude;
+        m_x = m_x * value / magnitude;
+        m_y = m_y * value / magnitude;
+        m_z = m_z * value / magnitude;
     } else {
         writeLog(WARNING, "attempted to normalize vector of magnitude 0");
     }
 }
 
 void Vector3D::faultTolerance(double faultTolerance) {
-    Vector3D::faultTolerance_ = faultTolerance_;
+    Vector3D::s_faultTolerance = s_faultTolerance;
 }
 
 bool Vector3D::equals(const Vector3D & v, double faultTolerance) const {
@@ -123,23 +123,23 @@ Vector3D Vector3D::crossProduct(const Vector3D & v1, const Vector3D & v2) {
 }
 
 Vector3D Vector3D::operator+(const Vector3D & v) const {
-    return Vector3D(x_ + v.x_, y_ + v.y_, z_ + v.z_);
+    return Vector3D(m_x + v.m_x, m_y + v.m_y, m_z + v.m_z);
 }
 
 Vector3D Vector3D::operator-(const Vector3D & v) const {
-    return Vector3D(x_ - v.x(), y_ - v.y(), z_ - v.z());
+    return Vector3D(m_x - v.x(), m_y - v.y(), m_z - v.z());
 }
 
 Vector3D Vector3D::operator*(const double & scale) const {
-    return Vector3D(x_ * scale, y_ * scale, z_ * scale);
+    return Vector3D(m_x * scale, m_y * scale, m_z * scale);
 }
 
 Vector3D Vector3D::operator/(const double & scale) const {
-    return Vector3D(x_ / scale, y_ / scale, z_ / scale);
+    return Vector3D(m_x / scale, m_y / scale, m_z / scale);
 }
 
 bool Vector3D::operator==(const Vector3D & v) const {
-    return equals(v, Vector3D::faultTolerance_);
+    return equals(v, Vector3D::s_faultTolerance);
 }
 
 bool Vector3D::operator!=(const Vector3D & v) const {
@@ -148,6 +148,6 @@ bool Vector3D::operator!=(const Vector3D & v) const {
 
 string Vector3D::toString() const {
     ostringstream stream;
-    stream << "[" << x_ << ", " << y_ << ", " << z_ << "]";
+    stream << "[" << m_x << ", " << m_y << ", " << m_z << "]";
     return stream.str();
 }

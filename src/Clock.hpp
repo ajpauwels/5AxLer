@@ -23,7 +23,7 @@ namespace mapmqp {
         static std::string wallTimeString(std::string dateSeparator = "/", std::string dateTimeSeparator = " ", std::string timeSeparator = ":"); //returns current date and time in format DD/MM/YYYY HH:MM:SS, where "/", " ", and ":" are speficied in parameters
         
     private:
-        long int prevTime = 0; // Last delta() call in milliseconds
+        long int m_prevTime = 0; // Last delta() call in milliseconds
     };
 }
 

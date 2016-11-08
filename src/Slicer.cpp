@@ -14,12 +14,12 @@ using namespace mapmqp;
 using namespace std;
 
 Slicer::Slicer(std::shared_ptr<const Mesh> p_mesh) :
-p_mesh_(p_mesh) { }
+m_p_mesh(p_mesh) { }
 
 Slice Slicer::slice(const Plane & plane) const {
     //TODO is this a good way to do this?
     vector<shared_ptr<const MeshFace>> p_faces;
-    for (vector<shared_ptr<MeshFace>>::const_iterator it = p_mesh_->p_faces().begin(); it != p_mesh_->p_faces().end(); it++) {
+    for (vector<shared_ptr<MeshFace>>::const_iterator it = m_p_mesh->p_faces().begin(); it != m_p_mesh->p_faces().end(); it++) {
         p_faces.push_back(*it);
     }
     return slice(plane, p_faces).first;
@@ -37,26 +37,29 @@ Slice Slicer::slice(const Plane & plane) const {
  */
 pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plane, const vector<shared_ptr<const MeshFace>> & p_facesSearchSpace) const {
     // Create the return slice with the plane it's on
-    Slice ret(plane);
+    Slice slice(plane);
 
     // Our vector of MeshFace objects located on the slice
     vector<shared_ptr<const MeshFace>> p_intersectingFaces;
     
-    // Hashes the three vertices of a MeshFace
-    struct TripleP_MeshVertexHash {
-        size_t operator()(const tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>> & p_vertices) const {
-            return hash<shared_ptr<const MeshVertex>>()(get<0>(p_vertices)) ^ hash<shared_ptr<const MeshVertex>>()(get<1>(p_vertices)) ^ hash<shared_ptr<const MeshVertex>>()(get<2>(p_vertices));
+    /**
+     * Hashes a MeshFace pointer. Note that this function hashes the
+     * pointer, not the actual values of the vertices in the MeshFace.
+     */
+    struct MeshFaceHash {
+        size_t operator()(const shared_ptr<const MeshFace> & p_meshFace) const {
+            return hash<shared_ptr<const MeshFace>>()(p_meshFace);
         }
     };
     
     // Stores the vertices that have already been evaluated by mapping its three vertices to a reference to the face
-    unordered_map<tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>, shared_ptr<const MeshFace>, TripleP_MeshVertexHash> mapped_p_checkedFaces;
+    unordered_map<shared_ptr<const MeshFace>, shared_ptr<const MeshFace>, MeshFaceHash> mapped_p_checkedFaces;
     
     // List of islands pre-ordering
     vector<shared_ptr<Island>> p_islands;
 
     // List of hole polygons and corresponding MeshFaces
-    vector<pair<Polygon, vector<shared_ptr<const MeshFace>>>> holes;
+    vector<shared_ptr<Island>> p_holes;
     
     // Iterate through all faces in the search space
     for (vector<shared_ptr<const MeshFace>>::const_iterator it = p_facesSearchSpace.begin(); it != p_facesSearchSpace.end(); it++) {
@@ -66,7 +69,7 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
         // Get some information about the face in relation to the slice
         bool alreadyMapped;
         if (mapped_p_checkedFaces.size() > 0) {
-            alreadyMapped = mapped_p_checkedFaces.find(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>(p_face->p_vertex(0), p_face->p_vertex(1), p_face->p_vertex(2))) != mapped_p_checkedFaces.end();
+            alreadyMapped = mapped_p_checkedFaces.find(p_face) != mapped_p_checkedFaces.end();
         } else {
             alreadyMapped = false;
         }
@@ -81,14 +84,12 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
             vector<Vector3D> polygonPoints;
             vector<shared_ptr<const MeshFace>> p_polygonMeshFaces;
             
-            //TODO determine somehow if polygon is hole inside of other polygon
-            
             shared_ptr<const MeshFace> p_startFace = p_face;
             shared_ptr<const MeshFace> p_currentFace = p_startFace;
             
             do {
                 //add ptr to MeshFace to list of checked faces
-                mapped_p_checkedFaces.emplace(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>(p_currentFace->p_vertex(0), p_currentFace->p_vertex(1), p_currentFace->p_vertex(2)), p_currentFace);
+                mapped_p_checkedFaces.emplace(p_currentFace, p_currentFace);
                 
                 //add ptr to MeshFace to hashtable of intersection faces
                 p_intersectingFaces.push_back(p_currentFace);
@@ -116,7 +117,7 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
             
             Polygon poly(polygonPoints);
             if (poly.area() < 0) { //polygon is a hole
-                holes.push_back(pair<Polygon, vector<shared_ptr<const MeshFace>>>(poly, p_polygonMeshFaces));
+                p_holes.push_back(shared_ptr<Island>(new Island(poly, p_polygonMeshFaces, true)));
             } else {
                 p_islands.push_back(shared_ptr<Island>(new Island(poly, p_polygonMeshFaces)));
             }
@@ -125,130 +126,66 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
     
     //all islands and holes found
     
-    //place islands in holes
-    
-    //TODO this is just temporary to return something
-    for (vector<shared_ptr<Island>>::iterator it = p_islands.begin(); it != p_islands.end(); it++) {
-        ret.addIsland(*it);
+    //if holes exist, we need to determine which islands they belong to and if any islands are inside holes
+    if (p_holes.size() > 0) {
+        //check if each island belongs in a hole
+        for (vector<shared_ptr<Island>>::iterator islandIt = p_islands.begin(); islandIt != p_islands.end(); islandIt++) {
+            shared_ptr<Island> p_island = *islandIt;
+            Vector3D firstPoint = p_island->polygon().points()[0];
+            
+            shared_ptr<Island> p_parentHole = nullptr; //which hole (if any) island is inside of
+            for (vector<shared_ptr<Island>>::iterator holeIt = p_holes.begin(); holeIt != p_holes.end(); holeIt++) {
+                shared_ptr<Island> p_hole = *holeIt;
+                
+                //if polygon is in hole
+                if (p_hole->polygon().pointInPolygon(firstPoint)) {
+                    if (p_parentHole) {
+                        //smaller parent is more immediate parent
+                        if (p_hole->polygon().area() < p_parentHole->polygon().area()) {
+                            p_parentHole = p_hole;
+                        }
+                    } else {
+                        p_parentHole = p_hole;
+                    }
+                }
+            }
+            
+            if (!p_parentHole) { //no parent hole means island is top level island
+                slice.addIsland(*islandIt);
+            }
+        }
+        
+        //check which islands each hole belongs to
+        for (vector<shared_ptr<Island>>::iterator holeIt = p_holes.begin(); holeIt != p_holes.end(); holeIt++) {
+            shared_ptr<Island> p_hole = *holeIt;
+            Vector3D firstPoint = p_hole->polygon().points()[0];
+            
+            shared_ptr<Island> p_parentIsland = nullptr; //which island hole is inside of
+            for (vector<shared_ptr<Island>>::iterator islandIt = p_islands.begin(); islandIt != p_islands.end(); islandIt++) {
+                shared_ptr<Island> p_island = *islandIt;
+                
+                //if hole is in island
+                if (p_island->polygon().pointInPolygon(firstPoint)) {
+                    if (p_parentIsland) {
+                        //smaller parent is more immediate parent
+                        if (p_parentIsland->polygon().area() < p_parentIsland->polygon().area()) {
+                            p_parentIsland = p_hole;
+                        }
+                    } else {
+                        p_parentIsland = p_hole;
+                    }
+                }
+            }
+            
+            if (!p_parentIsland) { //every hole should have a parent island
+                writeLog(ERROR, "slice generated hole without a parent island");
+            }
+        }
+        
+    } else { // if no holes exist, all islands are disjoint
+        for (vector<shared_ptr<Island>>::iterator it = p_islands.begin(); it != p_islands.end(); it++) {
+            slice.addIsland(*it);
+        }
     }
-    
-//    vector<shared_ptr<Island>> finalizedIslands;
-//    
-//    vector<shared_ptr<Island>> searchSpace;
-//    //TODO can this just be set to = p_islands?
-//    for (vector<shared_ptr<Island>>::iterator it = p_islands.begin(); it != p_islands.end(); it++) {
-//        searchSpace.push_back(*it);
-//    }
-//    
-//    int depth = 0;
-//    while (holes.size() > 0) {
-//        if (searchSpace.size() == 0) {
-//            printf("SEARCH SPACE IS 0\n");
-//        }
-//        
-//        vector<vector<shared_ptr<Island>>::iterator> p_topLevelPolysIterators;
-//        vector<vector<pair<Polygon, vector<shared_ptr<const MeshFace>>>>::iterator> topLevelHolePolyIterators; //holes that are only a subset of one island at level being evaluated - to be removed from holePolygons
-//        
-//        for (vector<pair<Polygon, vector<shared_ptr<const MeshFace>>>>::iterator holeIt = holes.begin(); holeIt != holes.end(); holeIt++) {
-//            vector<vector<shared_ptr<Island>>::iterator> enclosingIslandIterators; //islands that contain hole
-//            
-//            for (vector<shared_ptr<Island>>::iterator islandIt = searchSpace.begin(); islandIt != searchSpace.end(); islandIt++) {
-//                if ((*islandIt)->mainPolygon().pointInPolygon(holeIt->first.points()[0])) { //polygon contains hole
-//                    enclosingIslandIterators.push_back(islandIt);
-//                }
-//            }
-//            
-//            if (enclosingIslandIterators.size() == 0) {
-//                writeLog(ERROR, "hole exists that is not enclosed by an Island");
-//            } else if (enclosingIslandIterators.size() == 1) {
-//                shared_ptr<Island> p_island = *(enclosingIslandIterators[0]);
-//                
-//                //add hole to island
-//                p_island->addHole(holeIt->first, holeIt->second);
-//                
-//                //if island does not already have hole, add it to list of top level islands
-//                bool inList = false;
-//                for (vector<vector<shared_ptr<Island>>::iterator>::iterator it = p_topLevelPolysIterators.begin(); it != p_topLevelPolysIterators.end(); it++) {
-//                    inList |= (*it == enclosingIslandIterators[0]);
-//                }
-//                if (!inList) {
-//                    p_topLevelPolysIterators.push_back(enclosingIslandIterators[0]);
-//                    if (depth == 0) {
-//                        finalizedIslands.push_back(p_island);
-//                    }
-//                }
-//                
-//                //add hole to list of top level island holes
-//                topLevelHolePolyIterators.push_back(holeIt);
-//            }
-//        }
-//        
-//        //remove all islands with holes added from list of islands
-//        for (vector<vector<shared_ptr<Island>>::iterator>::iterator it = p_topLevelPolysIterators.begin(); it != p_topLevelPolysIterators.end(); it++) {
-//            searchSpace.erase(*it);
-//        }
-//        //remove all top level holes from hole polygons list
-//        for (vector<vector<pair<Polygon, vector<shared_ptr<const MeshFace>>>>::iterator>::iterator it = topLevelHolePolyIterators.begin(); it != topLevelHolePolyIterators.end(); it++) {
-//            holes.erase(*it);
-//        }
-//        
-//        if (depth == 0) {
-//            //cycle through remaining polygons and check to see if they are inside
-//            //if poly is not in any holes then it is a top level island
-//            vector<shared_ptr<Island>> newSearchSpace;
-//            for (vector<shared_ptr<Island>>::iterator it = searchSpace.begin(); it != searchSpace.end(); it++) {
-//                shared_ptr<Island> p_poly = *it;
-//                
-//                bool inHole = false;
-//                for (vector<vector<shared_ptr<Island>>::iterator>::iterator subIt = p_topLevelPolysIterators.begin(); subIt != p_topLevelPolysIterators.end(); subIt++) { //check every polygon with a hole if it contains polygon in it's hole
-//                    shared_ptr<Island> p_topLevelPoly = **subIt;
-//                    
-//                    //if polygon lies in hole of top level polygon, keep in search space
-//                    for (vector<Polygon>::const_iterator holeIt = p_topLevelPoly->holes().begin(); holeIt != p_topLevelPoly->holes().end(); holeIt++) {
-//                        if (holeIt->pointInPolygon(p_poly->mainPolygon().points()[0])) {
-//                            inHole = true;
-//                            //TODO place polygon in holeo
-//                            break;
-//                        }
-//                    }
-//                    if (inHole) {
-//                        break;
-//                    }
-//                }
-//                
-//                if (!inHole) {
-//                    finalizedIslands.push_back(p_poly);
-//                } else {
-//                    newSearchSpace.push_back(p_poly);
-//                }
-//            }
-//            searchSpace = newSearchSpace;
-//        } else {
-//            vector<shared_ptr<Island>> newSearchSpace;
-//            
-//            vector<shared_ptr<Island>> p_islandsToCheck;
-//            for (vector<shared_ptr<Island>>::iterator it = finalizedIslands.begin(); it != finalizedIslands.end(); it++) {
-//                vector<shared_ptr<Island>> p_subIslands = (*it)->getAllP_SubIslands(depth);
-//                for (vector<shared_ptr<Island>>::iterator subIt = p_subIslands.begin(); subIt != p_subIslands.end(); subIt++) {
-//                    p_islandsToCheck.push_back(*subIt);
-//                }
-//            }
-//            
-//            if (holes.size() == 0) {
-//                for (vector<shared_ptr<Island>>::iterator it = searchSpace.begin(); it != searchSpace.end(); it++) {
-//                    
-//                }
-//            } else {
-//                for (vector<vector<shared_ptr<Island>>::iterator>::iterator it = p_topLevelPolysIterators.begin(); it != searchSpace.end(); it++) {
-//                    for (vector<shared_ptr<Island>>::iterator subIt = p_islandsToCheck.begin(); subIt != p_islandsToCheck.end(); subIt++) {
-//                        //for (vector<Polygon>)
-//                    }
-//                }
-//            }
-//            
-//            searchSpace = newSearchSpace;
-//        }
-//    }
-    
-    return pair<Slice, vector<shared_ptr<const MeshFace>>>(ret, p_intersectingFaces);
+    return pair<Slice, vector<shared_ptr<const MeshFace>>>(slice, p_intersectingFaces);
 }

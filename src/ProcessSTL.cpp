@@ -6,8 +6,8 @@
 using namespace mapmqp;
 using namespace std;
 
-ProcessSTL::ProcessSTL(string stlFilePath) : p_mesh_(new Mesh()) {
-    stlFilePath_ = stlFilePath;
+ProcessSTL::ProcessSTL(string stlFilePath) : m_p_mesh(new Mesh()) {
+    m_stlFilePath = stlFilePath;
 }
 
 /**
@@ -18,7 +18,7 @@ ProcessSTL::ProcessSTL(string stlFilePath) : p_mesh_(new Mesh()) {
 shared_ptr<Mesh> ProcessSTL::run() {
     constructMeshFromSTL();
     
-    return p_mesh_;
+    return m_p_mesh;
 }
 
 /**
@@ -30,7 +30,7 @@ shared_ptr<Mesh> ProcessSTL::run() {
  * @return True if success, false otherwise
  */
 bool ProcessSTL::getFileHandler(ifstream & file) {
-    file.open(this->stlFilePath_.c_str(), ios::in | ios::binary);
+    file.open(this->m_stlFilePath.c_str(), ios::in | ios::binary);
     
     return file.is_open();
 }
@@ -48,10 +48,10 @@ bool ProcessSTL::getFileHandler(ifstream & file) {
 shared_ptr<MeshVertex> ProcessSTL::addMeshVertex(shared_ptr<MeshVertex> p_vertex) {
     shared_ptr<MeshVertex> finalVertex;
     // Add the vertex to the vertices list unless it's already there
-    pair<unordered_map<Vector3D, shared_ptr<MeshVertex>, Vector3DHash>::iterator, bool> emplacePair = mapped_p_vertices_.emplace(p_vertex->vertex(), p_vertex); //place MeshVertex ptr into hashtable
+    pair<unordered_map<Vector3D, shared_ptr<MeshVertex>, Vector3DHash>::iterator, bool> emplacePair = m_mapped_p_vertices.emplace(p_vertex->vertex(), p_vertex); //place MeshVertex ptr into hashtable
     finalVertex = emplacePair.first->second; //set MeshVertex ptr to returned value from hashtable in case it has changed
     if (emplacePair.second) { //if MeshVertex did not exist in hashtable, add to list of vertices
-        p_mesh_->addVertex(finalVertex);
+        m_p_mesh->addVertex(finalVertex);
     }
     
     return finalVertex;
@@ -82,7 +82,7 @@ void ProcessSTL::addMeshFace(shared_ptr<MeshFace> p_face) {
     // Check each edge against the map of edges
     for (unsigned int i = 0; i < 3; ++i) {
         // Hash the MeshEdge to the map of edges
-        pair<unordered_map<shared_ptr<MeshEdge>, shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality>::iterator, bool> emplacePair = mapped_p_edges_.emplace(edges[i], p_face);
+        pair<unordered_map<shared_ptr<MeshEdge>, shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality>::iterator, bool> emplacePair = m_mapped_p_edges.emplace(edges[i], p_face);
         
         printf("EDGE: %s, %s\n", edges[i]->p_vertex(0)->vertex().toString().c_str(), edges[i]->p_vertex(1)->vertex().toString().c_str());
         
@@ -123,12 +123,12 @@ void ProcessSTL::addMeshFace(shared_ptr<MeshFace> p_face) {
             p_face->connect(hashedFace, i);
             
             // Remove the edge from the hashmap since it's only used for the two connected triangles
-            mapped_p_edges_.erase(emplacePair.first);
+            m_mapped_p_edges.erase(emplacePair.first);
         }
     }
     
     // Finally, add the face to the mesh list of faces
-    p_mesh_->addFace(p_face);
+    m_p_mesh->addFace(p_face);
 }
 
 /**
@@ -147,7 +147,7 @@ void ProcessSTL::constructMeshFromSTL() {
     char *header = new char[80];					// The 80-char file header
     unsigned int size;								// The number of triangles in the file
     
-    writeLog(INFO, "parsing STL file %s...", stlFilePath_.c_str());
+    writeLog(INFO, "parsing STL file %s...", m_stlFilePath.c_str());
     if (getFileHandler(file)) {                        // Check that we opened successfully
         file.read(header, 80);							// Get the header
         file.read((char*)&size, 4);						// Get the number of triangles
@@ -182,13 +182,13 @@ void ProcessSTL::constructMeshFromSTL() {
                 // If the lowestVertex was never set or the current vertex is lower than the lowestVertex, replace
                 // lowestVertex with the current vertex
                 if (p_meshVertices[i]->vertex().z() == lowestZVal) {
-                    p_lowestVertices_.push_back(p_meshVertices[i]);
+                    m_p_lowestVertices.push_back(p_meshVertices[i]);
                 }
                 // If a lower vertex was encountered, reset the lowest vertices list
                 else if (p_meshVertices[i]->vertex().z() < lowestZVal) {
                     lowestZVal = p_meshVertices[i]->vertex().z();
-                    p_lowestVertices_.clear();
-                    p_lowestVertices_.push_back(p_meshVertices[i]);
+                    m_p_lowestVertices.clear();
+                    m_p_lowestVertices.push_back(p_meshVertices[i]);
                 }
             }
             
@@ -205,6 +205,6 @@ void ProcessSTL::constructMeshFromSTL() {
         }
         file.close();	// Close the file
     } else {
-        writeLog(ERROR, "unable to open file %s [errno: %s]", stlFilePath_.c_str(), strerror(errno));
+        writeLog(ERROR, "unable to open file %s [errno: %s]", m_stlFilePath.c_str(), strerror(errno));
     }
 }

@@ -13,48 +13,24 @@
 using namespace mapmqp;
 using namespace std;
 
-Island::Island(const Polygon & mainPolygon, vector<shared_ptr<const MeshFace>> p_mainPolygonMeshFaces) :
-mainPolygon_(mainPolygon),
-p_mainPolygonMeshFaces_(p_mainPolygonMeshFaces) { }
+Island::Island(const Polygon & polygon, vector<shared_ptr<const MeshFace>> p_polygonMeshFaces, bool isHole) :
+m_polygon(polygon),
+m_p_mainPolygonMeshFaces(p_polygonMeshFaces),
+m_isHole(isHole) { }
 
-const Polygon & Island::mainPolygon() const {
-    return mainPolygon_;
+const Polygon & Island::polygon() const {
+    return m_polygon;
 }
 
 const vector<shared_ptr<const MeshFace>> & Island::p_mainPolygonMeshFaces() const {
-    return p_mainPolygonMeshFaces_;
+    return m_p_mainPolygonMeshFaces;
 }
 
-const vector<shared_ptr<Island::Hole>> & Island::holes() const {
-    return holes_;
+const vector<shared_ptr<Island>> & Island::children() const {
+    return m_children;
 }
 
-void Island::addHole(shared_ptr<Hole> p_hole) {
-    p_hole->p_parentIsland_ = shared_ptr<const Island>(this);
-    holes_.push_back(p_hole);
-}
-
-void Island::addIslandToHole(shared_ptr<const Island> p_island, unsigned int holeIndex) {
-    if (holeIndex >= holes_.size()) {
-        writeLog(WARNING, "attempting to add island to hole index that does not exist");
-    } else {
-        holes_[holeIndex]->p_holeIslands_.push_back(p_island);
-    }
-}
-
-vector<shared_ptr<const Island>> Island::getP_SubIslandsAtDepth(unsigned int depth) {
-    vector<shared_ptr<const Island>> ret;
-    
-    if (depth == 0) {
-        ret.push_back(shared_ptr<const Island>(this));
-        return ret;
-    }
-    
-    for (vector<shared_ptr<Island::Hole>>::const_iterator it = holes_.begin(); it != holes_.end(); it++) {
-        for (vector<shared_ptr<const Island>>::const_iterator subIt = (*it)->p_holeIslands_.begin(); subIt != (*it)->p_holeIslands_.end(); subIt++) {
-            ret.push_back(*subIt);
-        }
-    }
-    
-    return ret;
+void Island::addChild(shared_ptr<Island> p_child) {
+    p_child->m_p_parentIsland = shared_ptr<const Island>(this);
+    m_children.push_back(p_child);
 }

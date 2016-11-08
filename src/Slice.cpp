@@ -12,16 +12,16 @@ using namespace mapmqp;
 using namespace std;
 
 Slice::Slice(const Plane & slicePlane) :
-slicePlane_(slicePlane) { }
+m_slicePlane(slicePlane) { }
 
 const Plane & Slice::slicePlane() const {
-    return slicePlane_;
+    return m_slicePlane;
 }
 
 const std::vector<shared_ptr<const Island>> & Slice::p_islands() const {
-    return p_islands_;
+    return m_p_islands;
 }
 
 void Slice::addIsland(shared_ptr<const Island> p_island) {
-    p_islands_.push_back(p_island);
+    m_p_islands.push_back(p_island);
 }

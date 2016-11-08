@@ -34,7 +34,8 @@ namespace mapmqp {
         std::pair<Slice, std::vector<std::shared_ptr<const MeshFace>>> slice(const Plane & plane, const std::vector<std::shared_ptr<const MeshFace>> & p_facesSearchSpace) const;
         
         //variables
-        std::shared_ptr<const Mesh> p_mesh_;
+        
+        std::shared_ptr<const Mesh> m_p_mesh;
 	};
 }
 

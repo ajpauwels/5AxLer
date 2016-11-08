@@ -28,7 +28,7 @@ Angle::Angle(double val) {
  * @return A double giving the value of the angle (in radians)
  */
 double Angle::val() const {
-    return val_;
+    return m_val;
 }
 
 /**
@@ -41,11 +41,11 @@ double Angle::val() const {
  * @return A double giving the sine value of the angle (in radians)
  */
 double Angle::sinVal(double scale) const {
-    if (!sinSet_) {
-        sin_ = sin(val_);
-        sinSet_ = true;
+    if (!m_sinSet) {
+        m_sin = sin(m_val);
+        m_sinSet = true;
     }
-    return sin_ * scale;
+    return m_sin * scale;
 }
 
 /**
@@ -58,11 +58,11 @@ double Angle::sinVal(double scale) const {
  * @return A double giving the cosine value of the angle (in radians)
  */
 double Angle::cosVal(double scale) const {
-    if (!cosSet_) {
-        cos_ = cos(val_);
-        cosSet_ = true;
+    if (!m_cosSet) {
+        m_cos = cos(m_val);
+        m_cosSet = true;
     }
-    return cos_ * scale;
+    return m_cos * scale;
 }
 
 /**
@@ -82,6 +82,6 @@ void Angle::val(double val) {
         val += (2.0 * M_PI);
     }
     
-    val_ = val;
-    sinSet_ = cosSet_ = false;
+    m_val = val;
+    m_sinSet = m_cosSet = false;
 }

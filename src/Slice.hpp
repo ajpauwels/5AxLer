@@ -25,8 +25,8 @@ namespace mapmqp {
         void addIsland(std::shared_ptr<const Island> p_island);
         
     private:
-        Plane slicePlane_;
-        std::vector<std::shared_ptr<const Island>> p_islands_;
+        Plane m_slicePlane;
+        std::vector<std::shared_ptr<const Island>> m_p_islands;
     };
 }
 

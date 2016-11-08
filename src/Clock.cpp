@@ -37,8 +37,8 @@ Clock::Clock() {
  */
 long int Clock::delta() {
     long int currentTime = epochTime();
-    long int delta = currentTime - prevTime;
-    prevTime = currentTime;
+    long int delta = currentTime - m_prevTime;
+    m_prevTime = currentTime;
     return delta;
 }
 
@@ -51,7 +51,7 @@ long int Clock::delta() {
  * @return A long giving the time elapsed (in milliseconds)
  */
 long int Clock::split() const {
-    return epochTime() - prevTime;
+    return epochTime() - m_prevTime;
 }
 
 /**

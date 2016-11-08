@@ -16,13 +16,13 @@ namespace mapmqp {
 	class VolumeDecomposer {
 	public:
 		// Constructor
-		VolumeDecomposer(std::shared_ptr<Mesh> p_m);
+		VolumeDecomposer(std::shared_ptr<Mesh> p_mesh);
 
 		// Returns the decomposed array of sub-meshes
 		// std::vector<std::shared_ptr<Mesh>> run();
 
 	private:
-		std::shared_ptr<Mesh> p_mesh_;
+		std::shared_ptr<Mesh> m_p_mesh;
 	};
 }
 

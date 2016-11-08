@@ -23,9 +23,9 @@ namespace mapmqp {
         void val(double val);
         
     private:
-        double val_;                                    // The angle value
-        mutable double sin_ = 0, cos_ = 0;              // The sine and cosine values of the angle
-        mutable bool sinSet_ = false, cosSet_ = false;  // True if the sine/cosine value has been computed already
+        double m_val;                                    // The angle value
+        mutable double m_sin = 0, m_cos = 0;              // The sine and cosine values of the angle
+        mutable bool m_sinSet = false, m_cosSet = false;  // True if the sine/cosine value has been computed already
     };
 }
 
