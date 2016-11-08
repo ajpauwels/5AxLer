@@ -92,6 +92,28 @@ int main(int argc, const char * argv[]) {
 //    printf("area: %f\n", ClipperLib::Area(poly));
 //    printf("in poly: %s\n", ClipperLib::PointInPolygon(ClipperLib::IntPoint(5, 5), poly) ? "true" : "false");
     
+    ClipperLib::Clipper clipper;
+    ClipperLib::Paths polys;
+    ClipperLib::Path p1;
+    ClipperLib::Path p2;
+    ClipperLib::Path p3;
+    ClipperLib::Path p4;
+    
+    p1 << ClipperLib::IntPoint(10, 10) << ClipperLib::IntPoint(100, 10) << ClipperLib::IntPoint(100, 100) << ClipperLib::IntPoint(10, 100);
+    p2 << ClipperLib::IntPoint(20, 20) << ClipperLib::IntPoint(20, 90) << ClipperLib::IntPoint(90, 90) << ClipperLib::IntPoint(90, 20);
+    p3 << ClipperLib::IntPoint(30, 30) << ClipperLib::IntPoint(50, 30) << ClipperLib::IntPoint(50, 50) << ClipperLib::IntPoint(30, 50);
+    p4 << ClipperLib::IntPoint(60, 60) << ClipperLib::IntPoint(80, 60) << ClipperLib::IntPoint(80, 80) << ClipperLib::IntPoint(60, 80);
+    
+    clipper.AddPath(p4, ClipperLib::ptSubject, true);
+    clipper.AddPath(p1, ClipperLib::ptSubject, true);
+    clipper.AddPath(p3, ClipperLib::ptSubject, true);
+    clipper.AddPath(p2, ClipperLib::ptSubject, true);
+    
+    ClipperLib::PolyTree solution;
+    
+    clipper.Execute(ClipperLib::ctUnion, solution);
+    solution.Total();
+    
     Slice slice = Slicer(p_mesh).slice(Plane(Vector3D(0, 0, 1), Vector3D(0, 0, 100)));
     slice.p_islands();
     

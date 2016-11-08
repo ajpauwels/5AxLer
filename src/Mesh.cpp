@@ -445,7 +445,7 @@ pair<Vector3D, Vector3D> MeshFace::planeIntersection(const Plane & plane) const 
     if (t01 > p01.magnitude()) {
         writeLog(ERROR, "first intersection point of MeshFace edge and plane is not contained in edge");
     }
-    if (t02 > p01.magnitude()) {
+    if (t02 > p02.magnitude()) {
         writeLog(ERROR, "second intersection point of MeshFace edge and plane is not contained in edge");
     }
     

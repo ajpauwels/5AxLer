@@ -15,6 +15,8 @@
 using namespace mapmqp;
 using namespace std;
 
+//see http://www.angusj.com/delphi/clipper/documentation/Docs/Overview/_Body.htm
+
 uint64_t Polygon::mappedPointPrecision_ = 1000000;
 
 Polygon::Polygon(const vector<Vector3D> & points) :

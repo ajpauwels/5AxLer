@@ -106,48 +106,44 @@ namespace mapmqp {
         va_start(argsConsole, entry);
 #endif
         
-#ifdef PRINT_SEPERATE_LOGS
         switch (type) {
             case INFO: {
+#ifdef PRINT_SEPERATE_LOGS
                 fprintf(logInfoFile, "[INFO] ");
                 vfprintf(logInfoFile, entry, argsInfo);
                 fprintf(logInfoFile, "\n");
                 fflush(logInfoFile);
-                
                 fprintf(logFile, "[INFO] ");
 #endif
 #ifdef PRINT_LOGS_TO_CONSOLE
                 printf("[INFO] ");
 #endif
-#ifdef PRINT_SEPERATE_LOGS
                 break;
             }
             case WARNING: {
+#ifdef PRINT_SEPERATE_LOGS
                 fprintf(logWarningsFile, "[WARNING] ");
                 vfprintf(logWarningsFile, entry, argsWarning);
                 fprintf(logWarningsFile, "\n");
                 fflush(logWarningsFile);
-                
                 fprintf(logFile, "[WARNING] ");
 #endif
 #ifdef PRINT_LOGS_TO_CONSOLE
                 printf("[WARNING] ");
 #endif
-#ifdef PRINT_SEPERATE_LOGS
                 break;
             }
             case ERROR: {
+#ifdef PRINT_SEPERATE_LOGS
                 fprintf(logErrorsFile, "[ERROR] ");
                 vfprintf(logErrorsFile, entry, argsError);
                 fprintf(logErrorsFile, "\n");
                 fflush(logErrorsFile);
-                
                 fprintf(logFile, "[ERROR] ");
 #endif
 #ifdef PRINT_LOGS_TO_CONSOLE
                 printf("[ERROR] ");
 #endif
-#ifdef PRINT_SEPERATE_LOGS
                 break;
             }
             default:
@@ -163,8 +159,7 @@ namespace mapmqp {
         va_end(argsInfo);
         va_end(argsWarning);
         va_end(argsError);
-        
-#endif
+      
 #ifdef PRINT_LOGS_TO_CONSOLE
         vprintf(entry, argsConsole);
         printf("\n");

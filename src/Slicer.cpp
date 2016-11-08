@@ -26,7 +26,7 @@ Slice Slicer::slice(const Plane & plane) const {
 }
 
 pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plane, const vector<shared_ptr<const MeshFace>> & p_facesSearchSpace) const {
-    Slice ret(plane);
+    Slice slice(plane);
     vector<shared_ptr<const MeshFace>> p_intersectingFaces;
     
     //used for hashing ptrs to MeshFaces
@@ -46,7 +46,7 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
     for (vector<shared_ptr<const MeshFace>>::const_iterator it = p_facesSearchSpace.begin(); it != p_facesSearchSpace.end(); it++) {
         shared_ptr<const MeshFace> p_face = *it;
         
-        printf("slicing MeshFace: %s\n", p_face->toString().c_str());
+        writeLog(INFO, "slicing MeshFace: %s", p_face->toString().c_str());
         
         if ((mapped_p_checkedFaces.size() > 0) && (mapped_p_checkedFaces.find(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>(p_face->p_vertex(0), p_face->p_vertex(1), p_face->p_vertex(2))) != mapped_p_checkedFaces.end())) { //face has already been evaluated
             continue;
@@ -107,7 +107,7 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
     
     //TODO this is just temporary to return something
     for (vector<shared_ptr<Island>>::iterator it = p_islands.begin(); it != p_islands.end(); it++) {
-        ret.addIsland(*it);
+        slice.addIsland(*it);
     }
     
 //    vector<shared_ptr<Island>> finalizedIslands;
@@ -228,5 +228,5 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
 //        }
 //    }
     
-    return pair<Slice, vector<shared_ptr<const MeshFace>>>(ret, p_intersectingFaces);
+    return pair<Slice, vector<shared_ptr<const MeshFace>>>(slice, p_intersectingFaces);
 }
