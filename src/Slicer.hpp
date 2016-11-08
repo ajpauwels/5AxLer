@@ -34,7 +34,7 @@ namespace mapmqp {
         
         //variables
         
-        std::shared_ptr<const Mesh> p_mesh_;
+        std::shared_ptr<const Mesh> m_p_mesh;
 	};
 }
 

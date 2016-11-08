@@ -55,11 +55,11 @@ namespace mapmqp {
 		    }
 		};
 
-		std::shared_ptr<Mesh> p_mesh_;
-		std::string stlFilePath_;
-		std::unordered_map<Vector3D, std::shared_ptr<MeshVertex>, Vector3DHash> mapped_p_vertices_;
-        std::unordered_map<std::shared_ptr<MeshEdge>, std::shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality> mapped_p_edges_;
-        std::vector<std::shared_ptr<MeshVertex>> p_lowestVertices_;
+		std::shared_ptr<Mesh> m_p_mesh;
+		std::string m_stlFilePath;
+		std::unordered_map<Vector3D, std::shared_ptr<MeshVertex>, Vector3DHash> m_mapped_p_vertices;
+        std::unordered_map<std::shared_ptr<MeshEdge>, std::shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality> m_mapped_p_edges;
+        std::vector<std::shared_ptr<MeshVertex>> m_p_lowestVertices;
 
 		bool getFileHandler(std::ifstream& file);
 		std::shared_ptr<MeshVertex> addMeshVertex(std::shared_ptr<MeshVertex> p_vertex);

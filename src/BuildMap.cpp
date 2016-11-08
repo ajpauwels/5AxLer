@@ -18,12 +18,12 @@ using namespace std;
 using namespace ClipperLib;
 
 BuildMap::BuildMap(Vector3D faceNormals[], double faceAreas[], int faceCount) :
-faceNormals_(faceNormals),
-faceAreas_(faceAreas),
-faceCount_(faceCount) { }
+m_faceNormals(faceNormals),
+m_faceAreas(faceAreas),
+m_faceCount(faceCount) { }
 
 bool BuildMap::solve() {
-    if (!solved_) {
+    if (!m_solved) {
         //all statics - should only be executed once
         
         static vector<pair<int, int>> ellipseCoors; //ellipse to remove from build map with center of v.theta() and v.phi()
@@ -59,8 +59,8 @@ bool BuildMap::solve() {
         
         //remove all contraints from face normals
         Paths holes;
-        for (unsigned int i = 0; i < faceCount_; i++) {
-            Vector3D v = faceNormals_[i];
+        for (unsigned int i = 0; i < m_faceCount; i++) {
+            Vector3D v = m_faceNormals[i];
             
             int xCenter = thetaToBAxisRange(v.theta());
             int yCenter = phiToAAxisRange(v.phi());
@@ -90,36 +90,36 @@ bool BuildMap::solve() {
         subject << IntPoint(0, 0) << IntPoint(0, A_AXIS_RANGE) << IntPoint(B_AXIS_RANGE, A_AXIS_RANGE) << IntPoint(B_AXIS_RANGE, 0);
         buildMapClipper.AddPath(subject, ptSubject, true);
         buildMapClipper.AddPaths(holes, ptClip, true);
-        if (!buildMapClipper.Execute(ctDifference, buildMap2D_, pftNonZero, pftNonZero)) {
+        if (!buildMapClipper.Execute(ctDifference, m_buildMap2D, pftNonZero, pftNonZero)) {
             writeLog(ERROR, "BUILD MAP - error taking difference of map and holes");
             return false;
         }
-        solved_ = true;
+        m_solved = true;
     }
     
     return true;
 }
 
 double BuildMap::area() const {
-    if (!solved_) {
+    if (!m_solved) {
         writeLog(WARNING, "BUILD MAP - taking area of unsolved build map");
         return 0;
     }
     
     //check to make sure paths are not empty (meaning empty area)
-    if (buildMap2D_.size() == 0) {
+    if (m_buildMap2D.size() == 0) {
         return 0;
     }
     
     double area = 0;
-    for (unsigned int i = 0; i < buildMap2D_.size(); i++) {
-        area += Area(buildMap2D_[i]);
+    for (unsigned int i = 0; i < m_buildMap2D.size(); i++) {
+        area += Area(m_buildMap2D[i]);
     }
     return area;
 }
 
 bool BuildMap::checkVector(const Vector3D & v, bool includeEdges) const {
-    if (!solved_) {
+    if (!m_solved) {
         writeLog(WARNING, "BUILD MAP - checking vector of unsolved build map");
         return false;
     }
@@ -129,7 +129,7 @@ bool BuildMap::checkVector(const Vector3D & v, bool includeEdges) const {
     }
     
     //will return 0 if false, -1 if on edge, 1 otherwise
-    int pointIn = PointInPolygon(IntPoint(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi())), buildMap2D_[0]);
+    int pointIn = PointInPolygon(IntPoint(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi())), m_buildMap2D[0]);
     return (includeEdges ? (pointIn != 0) : (pointIn == 1));
 }
 
@@ -142,7 +142,7 @@ Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, i
     }
     
     Clipper searchClipper;
-    searchClipper.AddPaths(buildMap2D_, ptSubject, true);
+    searchClipper.AddPaths(m_buildMap2D, ptSubject, true);
     
     bool cutHorizontally = width < height;
     int dx = (cutHorizontally ? width : ceil(static_cast<double>(width) / 2.0));
@@ -173,7 +173,7 @@ Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, i
 }
 
 Vector3D BuildMap::findValidVector() const {
-    if (!solved_) {
+    if (!m_solved) {
         writeLog(WARNING, "BUILD MAP - finding valid vector of unsolved build map");
         return Vector3D(0, 0, 0);
     }
@@ -219,7 +219,7 @@ Vector3D BuildMap::findBestVectorRecursive(int x, int y, int dx, int dy, double 
 }
 
 Vector3D BuildMap::findBestVector() const {
-    if (!solved_) {
+    if (!m_solved) {
         writeLog(WARNING, "BUILD MAP - finding best vector of unsolved build map");
         return Vector3D(0, 0, 0);
     }
@@ -231,7 +231,7 @@ Vector3D BuildMap::findBestVector() const {
 }
 
 double BuildMap::weighVector(const Vector3D & v) const {
-    if (!solved_) {
+    if (!m_solved) {
         writeLog(WARNING, "BUILD MAP - weighing vector of unsolved build map");
         return INFINITY;
     }
@@ -244,14 +244,14 @@ double BuildMap::weighVector(const Vector3D & v) const {
     
     double weight = 0;
     //double totalFaceArea;
-    for (unsigned int i = 0; i < faceCount_; i++) {
+    for (unsigned int i = 0; i < m_faceCount; i++) {
 #ifdef DEBUG_MODE
-        if (Vector3D::dotProduct(v, faceNormals_[i]) > cos(THETA_MAX)) {
-            writeLog(ERROR, "BUILD MAP - dotProduct(v, faceNormals[%d]) = %d > cos(THETA_MAX) = %d", i, Vector3D::dotProduct(v, faceNormals_[i]), cos(THETA_MAX));
+        if (Vector3D::dotProduct(v, m_faceNormals[i]) > cos(THETA_MAX)) {
+            writeLog(ERROR, "BUILD MAP - dotProduct(v, faceNormals[%d]) = %d > cos(THETA_MAX) = %d", i, Vector3D::dotProduct(v, m_faceNormals[i]), cos(THETA_MAX));
         }
 #endif
-        weight += Vector3D::dotProduct(v, faceNormals_[i]) * faceAreas_[i];
-        //totalFaceArea += faceAreas_[i];
+        weight += Vector3D::dotProduct(v, m_faceNormals[i]) * m_faceAreas[i];
+        //totalFaceArea += m_faceAreas[i];
     }
     //weight *= SLICE_THICKNESS;
     //weight /= totalFaceArea;

@@ -14,12 +14,12 @@ using namespace mapmqp;
 using namespace std;
 
 Slicer::Slicer(std::shared_ptr<const Mesh> p_mesh) :
-p_mesh_(p_mesh) { }
+m_p_mesh(p_mesh) { }
 
 Slice Slicer::slice(const Plane & plane) const {
     //TODO is this a good way to do this?
     vector<shared_ptr<const MeshFace>> p_faces;
-    for (vector<shared_ptr<MeshFace>>::const_iterator it = p_mesh_->p_faces().begin(); it != p_mesh_->p_faces().end(); it++) {
+    for (vector<shared_ptr<MeshFace>>::const_iterator it = m_p_mesh->p_faces().begin(); it != m_p_mesh->p_faces().end(); it++) {
         p_faces.push_back(*it);
     }
     return slice(plane, p_faces).first;

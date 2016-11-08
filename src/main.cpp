@@ -114,7 +114,7 @@ int main(int argc, const char * argv[]) {
     clipper.Execute(ClipperLib::ctUnion, solution);
     solution.Total();
     
-    Slice slice = Slicer(p_mesh).slice(Plane(Vector3D(0, 0, 1), Vector3D(0, 0, 100)));
+    Slice slice = Slicer(p_mesh).slice(Plane(Vector3D(0, 0, 1), 100));
     slice.p_islands();
     
     /*

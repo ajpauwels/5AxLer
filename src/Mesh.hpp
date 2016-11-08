@@ -38,11 +38,10 @@ namespace mapmqp {
         void addFace(std::shared_ptr<MeshFace> p_face);
         
     private:
+        std::vector<std::shared_ptr<MeshVertex>> m_p_vertices;
+        std::vector<std::shared_ptr<MeshFace>> m_p_faces;
         
-        std::vector<std::shared_ptr<MeshVertex>> p_vertices_;
-        std::vector<std::shared_ptr<MeshFace>> p_faces_;
-        
-        std::vector<std::shared_ptr<MeshVertex>> p_lowestVertices_;
+        std::vector<std::shared_ptr<MeshVertex>> m_p_lowestVertices;
     };
 
     // MeshVertex class declaration
@@ -62,8 +61,8 @@ namespace mapmqp {
         std::string toString() const;
         
     private:
-        Vector3D vertex_;
-        std::vector<std::shared_ptr<const MeshFace>> p_faces_; //all faces that have this vertex as a vertex
+        Vector3D m_vertex;
+        std::vector<std::shared_ptr<const MeshFace>> m_p_faces; //all faces that have this vertex as a vertex
     };
 
     // MeshEdge class declaration
@@ -86,8 +85,8 @@ namespace mapmqp {
         bool operator==(const MeshEdge & edge) const;
         
     private:
-        bool faceAdded = false;
-        std::shared_ptr<const MeshVertex> p_vertices_[2];
+        bool m_faceAdded = false;
+        std::shared_ptr<const MeshVertex> m_p_vertices[2];
     };
     
     class MeshFace {
@@ -122,13 +121,13 @@ namespace mapmqp {
         
     private:
         //x, y, z vertices in counter-clockwise order
-        std::shared_ptr<const MeshVertex> p_vertices_[3];
+        std::shared_ptr<const MeshVertex> m_p_vertices[3];
 
         //faces that share the x/y, y/z, and z/x edges
-        std::shared_ptr<const MeshFace> p_faces_[3];
+        std::shared_ptr<const MeshFace> m_p_faces[3];
         
-        double area_;
-        Vector3D normal_;
+        double m_area;
+        Vector3D m_normal;
     };
 }
 

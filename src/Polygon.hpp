@@ -40,15 +40,15 @@ namespace mapmqp {
         std::string toString() const;
         
     private:
-        std::vector<Vector3D> points_; //stored in counter-clockwise form
-        Plane plane_;
-        Vector3D planeAxisX_, planeAxisY_; //create x and y axes relative to polygon plane
+        std::vector<Vector3D> m_points; //stored in counter-clockwise form
+        Plane m_plane;
+        Vector3D m_planeAxisX, m_planeAxisY; //create x and y axes relative to polygon plane
         
         //TODO should these be variables of #defines?
-        static uint64_t mappedPointPrecision_; //since clipper only uses integers as coordinates, coordinates are multiplied by mappedPointPrecision_ when stored in polygonXYPlane_ and divided back by mappedPointPrecision_ when returned (clipper integers range from +/- 4.6e18 ~= 2^62)
+        static uint64_t s_mappedPointPrecision; //since clipper only uses integers as coordinates, coordinates are multiplied by mappedPointPrecision_ when stored in polygonXYPlane_ and divided back by mappedPointPrecision_ when returned (clipper integers range from +/- 4.6e18 ~= 2^62)
         
-        ClipperLib::Path polygonXYPlane_; //clipper representation of polygon
-        bool solved_; //whether or not polygon_ has been updated to represent polygon
+        ClipperLib::Path m_polygonXYPlane; //clipper representation of polygon
+        bool m_solved; //whether or not polygon_ has been updated to represent polygon
     };
 }
 

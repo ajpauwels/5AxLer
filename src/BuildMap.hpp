@@ -34,13 +34,13 @@ namespace mapmqp {
         
     private: //TODO make private - just for debugging
         //surface info
-        Vector3D * faceNormals_;
-        double * faceAreas_;
-        unsigned int faceCount_;
+        Vector3D * m_faceNormals;
+        double * m_faceAreas;
+        unsigned int m_faceCount;
         
         //x->theta, y->phi
-        ClipperLib::Paths buildMap2D_;
-        bool solved_ = false;
+        ClipperLib::Paths m_buildMap2D;
+        bool m_solved = false;
         
         Vector3D findValidVectorRecursive(int xStart, int yStart, int width, int height) const;
         Vector3D findBestVectorRecursive(int x, int y, int dx, int dy, double heuristic) const;

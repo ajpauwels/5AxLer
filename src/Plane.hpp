@@ -22,10 +22,11 @@ namespace mapmqp {
             BELOW
         };
         
-        Plane(const Vector3D & normal = Vector3D(0, 0, 1), const Vector3D & origin = Vector3D(0, 0, 0)); //normal vector set as default xy plane so plane will still have a normal when initialized with default value
+        Plane(const Vector3D & normal = Vector3D(0, 0, 1), double scalar = 0.0); //normal vector set as default xy plane so plane will still have a normal when initialized with default value
         
         //getters
         const Vector3D & normal() const;
+        const double scalar() const;
         const Vector3D & origin() const;
         
         //setters
@@ -41,8 +42,8 @@ namespace mapmqp {
         std::string toString() const;
         
     private:
-        Vector3D normal_, origin_;
-        static double faultTolerance_; //used for fault tolerance when determining if a point is on polygon plane
+        Vector3D m_normal, m_origin;
+        static double s_faultTolerance; //used for fault tolerance when determining if a point is on polygon plane
     };
 }
 

@@ -23,19 +23,19 @@ namespace mapmqp {
             
         public:
             Hole(Polygon holePolygon, std::vector<std::shared_ptr<const MeshFace>> p_holeMeshFaces) :
-            holePolygon_(holePolygon),
-            p_holeMeshFaces_(p_holeMeshFaces) { }
+            m_holePolygon(holePolygon),
+            m_p_holeMeshFaces(p_holeMeshFaces) { }
             
-            std::shared_ptr<const Island> p_parentIsland() { return p_parentIsland_; }
-            const Polygon & holePolygon() { return holePolygon_; }
-            const std::vector<std::shared_ptr<const MeshFace>> & p_holeMeshFaces() { return p_holeMeshFaces_; }
-            const std::vector<std::shared_ptr<const Island>> & p_holeIslands() { return p_holeIslands_; }
+            std::shared_ptr<const Island> p_parentIsland() { return m_p_parentIsland; }
+            const Polygon & holePolygon() { return m_holePolygon; }
+            const std::vector<std::shared_ptr<const MeshFace>> & p_holeMeshFaces() { return m_p_holeMeshFaces; }
+            const std::vector<std::shared_ptr<const Island>> & p_holeIslands() { return m_p_holeIslands; }
             
         private:
-            std::shared_ptr<const Island> p_parentIsland_ = nullptr;
-            Polygon holePolygon_;
-            std::vector<std::shared_ptr<const MeshFace>> p_holeMeshFaces_;
-            std::vector<std::shared_ptr<const Island>> p_holeIslands_;
+            std::shared_ptr<const Island> m_p_parentIsland = nullptr;
+            Polygon m_holePolygon;
+            std::vector<std::shared_ptr<const MeshFace>> m_p_holeMeshFaces;
+            std::vector<std::shared_ptr<const Island>> m_p_holeIslands;
         };
         
         Island(const Polygon & mainPolygon, std::vector<std::shared_ptr<const MeshFace>> p_mainPolygonMeshFaces);
@@ -53,9 +53,9 @@ namespace mapmqp {
         
     private:
         Polygon mainPolygon_; //polygon that represents outline of island
-        std::vector<std::shared_ptr<const MeshFace>> p_mainPolygonMeshFaces_; //ptr to MeshFace on each edge of mainPolygon_, i.e. p_mainPolygonMeshFaces_[x] is the MeshFace that the xth edge of mainPolygon_ came from
+        std::vector<std::shared_ptr<const MeshFace>> m_p_mainPolygonMeshFaces; //ptr to MeshFace on each edge of mainPolygon_, i.e. p_mainPolygonMeshFaces_[x] is the MeshFace that the xth edge of mainPolygon_ came from
         
-        std::vector<std::shared_ptr<Hole>> holes_;
+        std::vector<std::shared_ptr<Hole>> m_holes;
     };
 }
 

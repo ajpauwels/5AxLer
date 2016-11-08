@@ -11,7 +11,7 @@
 using namespace mapmqp;
 using namespace std;
 
-VolumeDecomposer::VolumeDecomposer(shared_ptr<Mesh> p_m) : p_mesh_(p_m) {}
+VolumeDecomposer::VolumeDecomposer(shared_ptr<Mesh> p_mesh) : m_p_mesh(p_mesh) {}
 
 //vector<shared_ptr<Mesh>> VolumeDecomposer::run() {
 //	return

@@ -15,36 +15,38 @@
 using namespace mapmqp;
 using namespace std;
 
-double Plane::faultTolerance_ = 0.0;
+double Plane::s_faultTolerance = 0.0;
 
-Plane::Plane(const Vector3D & normal, const Vector3D & origin) :
-normal_(normal),
-origin_(origin) { }
+Plane::Plane(const Vector3D & normal, double scalar) :
+m_normal(normal) {
+    m_origin = normal;
+    m_origin.normalize(scalar);
+}
 
 const Vector3D & Plane::normal() const {
-    return normal_;
+    return m_normal;
 }
 
 const Vector3D & Plane::origin() const {
-    return origin_;
+    return m_origin;
 }
 
 void Plane::normal(Vector3D normal) {
-    normal_ = normal;
+    m_normal = normal;
 }
 
 void Plane::origin(Vector3D origin) {
-    origin_ = origin;
+    m_origin = origin;
 }
 
 Plane::PLANE_POSITION Plane::pointOnPlane(const Vector3D & point) const {
-    if (point == origin_) {
+    if (point == m_origin) {
         return ON;
     }
     
-    double dotVal = Vector3D::dotProduct(point - origin_, normal_);
+    double dotVal = Vector3D::dotProduct(point - m_origin, m_normal);
     
-    if (doubleEquals(dotVal, 0.0, faultTolerance_)) {
+    if (doubleEquals(dotVal, 0.0, s_faultTolerance)) {
         return ON;
     } else if (dotVal > 0) {
         return ABOVE;
@@ -54,15 +56,15 @@ Plane::PLANE_POSITION Plane::pointOnPlane(const Vector3D & point) const {
 }
 
 double Plane::faultTolerance() {
-    return Plane::faultTolerance_;
+    return Plane::s_faultTolerance;
 }
 
 void Plane::faultTolerance(double faultTolerance) {
-    Plane::faultTolerance_ = faultTolerance;
+    Plane::s_faultTolerance = faultTolerance;
 }
 
 string Plane::toString() const {
     ostringstream stream;
-    stream << "[plane:" << normal_.toString() << ", origin:" << origin_.toString() << "]";
+    stream << "[plane:" << m_normal.toString() << ", origin:" << m_origin.toString() << "]";
     return stream.str();
 }
