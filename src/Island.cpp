@@ -13,12 +13,12 @@
 using namespace mapmqp;
 using namespace std;
 
-Island::Island(const Polygon & mainPolygon, vector<shared_ptr<const MeshFace>> p_mainPolygonMeshFaces) :
-mainPolygon_(mainPolygon),
-m_p_mainPolygonMeshFaces(p_mainPolygonMeshFaces) { }
+Island::Island(const Polygon & polygon, vector<shared_ptr<const MeshFace>> p_polygonMeshFaces) :
+m_polygon(polygon),
+m_p_mainPolygonMeshFaces(p_polygonMeshFaces) { }
 
-const Polygon & Island::mainPolygon() const {
-    return mainPolygon_;
+const Polygon & Island::polygon() const {
+    return m_polygon;
 }
 
 const vector<shared_ptr<const MeshFace>> & Island::p_mainPolygonMeshFaces() const {
@@ -38,7 +38,7 @@ void Island::addIslandToHole(shared_ptr<const Island> p_island, unsigned int hol
     if (holeIndex >= m_holes.size()) {
         writeLog(WARNING, "attempting to add island to hole index that does not exist");
     } else {
-        m_holes[holeIndex]->m_p_holeIslands.push_back(p_island);
+        m_holes[holeIndex]->m_p_islands.push_back(p_island);
     }
 }
 
@@ -51,7 +51,7 @@ vector<shared_ptr<const Island>> Island::getP_SubIslandsAtDepth(unsigned int dep
     }
     
     for (vector<shared_ptr<Island::Hole>>::const_iterator it = m_holes.begin(); it != m_holes.end(); it++) {
-        for (vector<shared_ptr<const Island>>::const_iterator subIt = (*it)->m_p_holeIslands.begin(); subIt != (*it)->m_p_holeIslands.end(); subIt++) {
+        for (vector<shared_ptr<const Island>>::const_iterator subIt = (*it)->m_p_islands.begin(); subIt != (*it)->m_p_islands.end(); subIt++) {
             ret.push_back(*subIt);
         }
     }

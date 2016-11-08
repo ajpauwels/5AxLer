@@ -22,26 +22,26 @@ namespace mapmqp {
             friend class Island;
             
         public:
-            Hole(Polygon holePolygon, std::vector<std::shared_ptr<const MeshFace>> p_holeMeshFaces) :
-            m_holePolygon(holePolygon),
-            m_p_holeMeshFaces(p_holeMeshFaces) { }
+            Hole(Polygon polygon, std::vector<std::shared_ptr<const MeshFace>> p_meshFaces) :
+            m_polygon(polygon),
+            m_p_meshFaces(p_meshFaces) { }
             
             std::shared_ptr<const Island> p_parentIsland() { return m_p_parentIsland; }
-            const Polygon & holePolygon() { return m_holePolygon; }
-            const std::vector<std::shared_ptr<const MeshFace>> & p_holeMeshFaces() { return m_p_holeMeshFaces; }
-            const std::vector<std::shared_ptr<const Island>> & p_holeIslands() { return m_p_holeIslands; }
+            const Polygon & polygon() { return m_polygon; }
+            const std::vector<std::shared_ptr<const MeshFace>> & p_meshFaces() { return m_p_meshFaces; }
+            const std::vector<std::shared_ptr<const Island>> & p_islands() { return m_p_islands; }
             
         private:
             std::shared_ptr<const Island> m_p_parentIsland = nullptr;
-            Polygon m_holePolygon;
-            std::vector<std::shared_ptr<const MeshFace>> m_p_holeMeshFaces;
-            std::vector<std::shared_ptr<const Island>> m_p_holeIslands;
+            Polygon m_polygon;
+            std::vector<std::shared_ptr<const MeshFace>> m_p_meshFaces;
+            std::vector<std::shared_ptr<const Island>> m_p_islands;
         };
         
         Island(const Polygon & mainPolygon, std::vector<std::shared_ptr<const MeshFace>> p_mainPolygonMeshFaces);
         
         //getters
-        const Polygon & mainPolygon() const;
+        const Polygon & polygon() const;
         const std::vector<std::shared_ptr<const MeshFace>> & p_mainPolygonMeshFaces() const;
         const std::vector<std::shared_ptr<Hole>> & holes() const;
         
@@ -52,7 +52,7 @@ namespace mapmqp {
         std::vector<std::shared_ptr<const Island>> getP_SubIslandsAtDepth(unsigned int depth);
         
     private:
-        Polygon mainPolygon_; //polygon that represents outline of island
+        Polygon m_polygon; //polygon that represents outline of island
         std::vector<std::shared_ptr<const MeshFace>> m_p_mainPolygonMeshFaces; //ptr to MeshFace on each edge of mainPolygon_, i.e. p_mainPolygonMeshFaces_[x] is the MeshFace that the xth edge of mainPolygon_ came from
         
         std::vector<std::shared_ptr<Hole>> m_holes;
