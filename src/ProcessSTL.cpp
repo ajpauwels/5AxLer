@@ -205,6 +205,6 @@ void ProcessSTL::constructMeshFromSTL() {
         }
         file.close();	// Close the file
     } else {
-        writeLog(ERROR, "unable to open file %s [errno: %d]", stlFilePath_.c_str(), strerror(errno));
+        writeLog(ERROR, "unable to open file %s [errno: %s]", stlFilePath_.c_str(), strerror(errno));
     }
 }
