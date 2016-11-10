@@ -18,7 +18,7 @@
 #include <stdio.h>
 
 //for debugging
-#include "../libs/Clipper/clipper.hpp"
+#include "../libs/clipper/clipper.hpp"
 #include "Mesh.hpp"
 #include "Utility.hpp"
 #include "Clock.hpp"

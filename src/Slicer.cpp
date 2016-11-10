@@ -25,77 +25,102 @@ Slice Slicer::slice(const Plane & plane) const {
     return slice(plane, p_faces).first;
 }
 
+/**
+ * Takes a plane to slice a collection of mesh faces in. This plane
+ * can be in any orientation and position relative to the origin
+ *
+ * @param plane A Plane object representing the slicing plane
+ * @param p_facesSearchSpace A vector of pointers to mesh faces which will be sliced
+ *
+ * @return A pair containing the Slice object as its first element, and a vector of MeshFace
+ *         pointers aligned with that slice as the second object
+ */
 pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plane, const vector<shared_ptr<const MeshFace>> & p_facesSearchSpace) const {
+    // Create the return slice with the plane it's on
     Slice slice(plane);
+
+    // Our vector of MeshFace objects located on the slice
     vector<shared_ptr<const MeshFace>> p_intersectingFaces;
     
-    //used for hashing ptrs to MeshFaces
+    /**
+     * Hashes a MeshFace pointer. Note that this function hashes the
+     * pointer, not the actual values of the vertices in the MeshFace.
+     */
     struct MeshFaceHash {
-        size_t operator()(const MeshFace & meshFace) const {
-            return hash<shared_ptr<const MeshVertex>>()(meshFace.p_vertex(0)) ^ hash<shared_ptr<const MeshVertex>>()(meshFace.p_vertex(1)) ^ hash<shared_ptr<const MeshVertex>>()(meshFace.p_vertex(2));
+        size_t operator()(const shared_ptr<const MeshFace> & p_meshFace) const {
+            return hash<shared_ptr<const MeshFace>>()(p_meshFace);
         }
     };
     
-    unordered_map<MeshFace, shared_ptr<const MeshFace>, MeshFaceHash> mapped_p_checkedFaces;
+    // Stores the vertices that have already been evaluated by mapping its three vertices to a reference to the face
+    unordered_map<shared_ptr<const MeshFace>, shared_ptr<const MeshFace>, MeshFaceHash> mapped_p_checkedFaces;
     
-    //list of islands pre-ordering
+    // List of islands pre-ordering
     vector<shared_ptr<Island>> p_islands;
-    //list of hole polygons and corresponding MeshFaces
-    vector<shared_ptr<Island::Hole>> p_holes;
+
+    // List of hole polygons and corresponding MeshFaces
+    vector<shared_ptr<Island>> p_holes;
     
+    // Iterate through all faces in the search space
     for (vector<shared_ptr<const MeshFace>>::const_iterator it = p_facesSearchSpace.begin(); it != p_facesSearchSpace.end(); it++) {
+        // Grab the actual MeshFace pointer from the iterator
         shared_ptr<const MeshFace> p_face = *it;
-        
-        writeLog(INFO, "slicing MeshFace: %s", p_face->toString().c_str());
-        
-        if ((mapped_p_checkedFaces.size() > 0) && (mapped_p_checkedFaces.find(*p_face) != mapped_p_checkedFaces.end())) { //face has already been evaluated
-            continue;
-        } else if (!(p_face->intersectsPlane(plane))) { //face does not intersect plane
-            continue;
-        } else if (p_face->liesOnPlane(plane)) {
-            continue;
-        }
-        
-        //cycle around faces until circle is complete
-        vector<Vector3D> polygonPoints;
-        vector<shared_ptr<const MeshFace>> p_polygonMeshFaces;
-        
-        shared_ptr<const MeshFace> p_startFace = p_face;
-        shared_ptr<const MeshFace> p_currentFace = p_startFace;
-        
-        do {
-            //add ptr to MeshFace to list of checked faces
-            mapped_p_checkedFaces.emplace(*p_currentFace, p_currentFace);
-            
-            //add ptr to MeshFace to hashtable of intersection faces
-            p_intersectingFaces.push_back(p_currentFace);
-            
-            pair<Vector3D, Vector3D> intersectionLine = p_currentFace->planeIntersection(plane);
-            
-            //add first point of face intersection to list of polygon points
-            polygonPoints.push_back(intersectionLine.first);
-            p_polygonMeshFaces.push_back(p_currentFace);
-            
-            //determine which edge of face is next
-            if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(0)->vertex(), p_currentFace->p_vertex(1)->vertex() - p_currentFace->p_vertex(0)->vertex()).magnitude() == 0) {
-                p_currentFace = p_currentFace->p_connectedFace(0);
-            } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(1)->vertex(), p_currentFace->p_vertex(2)->vertex() - p_currentFace->p_vertex(1)->vertex()).magnitude() == 0) {
-                p_currentFace = p_currentFace->p_connectedFace(1);
-            } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(2)->vertex(), p_currentFace->p_vertex(0)->vertex() - p_currentFace->p_vertex(2)->vertex()).magnitude() == 0) {
-                p_currentFace = p_currentFace->p_connectedFace(2);
-            }
-            
-            if (!p_currentFace) {
-                writeLog(ERROR, "connected face to face being sliced is nullptr");
-                break;
-            }
-        } while (p_currentFace != p_startFace);
-        
-        Polygon poly(polygonPoints);
-        if (poly.area() < 0) { //polygon is a hole
-            p_holes.push_back(shared_ptr<Island::Hole>(new Island::Hole(poly, p_polygonMeshFaces)));
+
+        // Get some information about the face in relation to the slice
+        bool alreadyMapped;
+        if (mapped_p_checkedFaces.size() > 0) {
+            alreadyMapped = mapped_p_checkedFaces.find(p_face) != mapped_p_checkedFaces.end();
         } else {
-            p_islands.push_back(shared_ptr<Island>(new Island(poly, p_polygonMeshFaces)));
+            alreadyMapped = false;
+        }
+        bool intersectsPlane = p_face->intersectsPlane(plane);
+        bool liesOnPlane = p_face->liesOnPlane(plane);
+
+        writeLog(INFO, "slicing MeshFace: %s\n", p_face->toString().c_str());
+        
+        // Check we've never seen this face, it intersects the plane, and it doesn't lie on the plane
+        if (!alreadyMapped && intersectsPlane && !liesOnPlane) {
+            // Cycle around faces until circle is complete
+            vector<Vector3D> polygonPoints;
+            vector<shared_ptr<const MeshFace>> p_polygonMeshFaces;
+            
+            shared_ptr<const MeshFace> p_startFace = p_face;
+            shared_ptr<const MeshFace> p_currentFace = p_startFace;
+            
+            do {
+                //add ptr to MeshFace to list of checked faces
+                mapped_p_checkedFaces.emplace(p_currentFace, p_currentFace);
+                
+                //add ptr to MeshFace to hashtable of intersection faces
+                p_intersectingFaces.push_back(p_currentFace);
+                
+                pair<Vector3D, Vector3D> intersectionLine = p_currentFace->planeIntersection(plane);
+                
+                //add first point of face intersection to list of polygon points
+                polygonPoints.push_back(intersectionLine.first);
+                p_polygonMeshFaces.push_back(p_currentFace);
+                
+                //determine which edge of face is next
+                if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(0)->vertex(), p_currentFace->p_vertex(1)->vertex() - p_currentFace->p_vertex(0)->vertex()).magnitude() == 0) {
+                    p_currentFace = p_currentFace->p_connectedFace(0);
+                } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(1)->vertex(), p_currentFace->p_vertex(2)->vertex() - p_currentFace->p_vertex(1)->vertex()).magnitude() == 0) {
+                    p_currentFace = p_currentFace->p_connectedFace(1);
+                } else if (Vector3D::crossProduct(intersectionLine.second - p_currentFace->p_vertex(2)->vertex(), p_currentFace->p_vertex(0)->vertex() - p_currentFace->p_vertex(2)->vertex()).magnitude() == 0) {
+                    p_currentFace = p_currentFace->p_connectedFace(2);
+                }
+                
+                if (!p_currentFace) {
+                    writeLog(ERROR, "connected face to face being sliced is nullptr");
+                    break;
+                }
+            } while (p_currentFace != p_startFace);
+            
+            Polygon poly(polygonPoints);
+            if (poly.area() < 0) { //polygon is a hole
+                p_holes.push_back(shared_ptr<Island>(new Island(poly, p_polygonMeshFaces, true)));
+            } else {
+                p_islands.push_back(shared_ptr<Island>(new Island(poly, p_polygonMeshFaces)));
+            }
         }
     }
     
@@ -108,9 +133,9 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
             shared_ptr<Island> p_island = *islandIt;
             Vector3D firstPoint = p_island->polygon().points()[0];
             
-            shared_ptr<Island::Hole> p_parentHole = nullptr; //which hole (if any) island is inside of
-            for (vector<shared_ptr<Island::Hole>>::iterator holeIt = p_holes.begin(); holeIt != p_holes.end(); holeIt++) {
-                shared_ptr<Island::Hole> p_hole = *holeIt;
+            shared_ptr<Island> p_parentHole = nullptr; //which hole (if any) island is inside of
+            for (vector<shared_ptr<Island>>::iterator holeIt = p_holes.begin(); holeIt != p_holes.end(); holeIt++) {
+                shared_ptr<Island> p_hole = *holeIt;
                 
                 //if polygon is in hole
                 if (p_hole->polygon().pointInPolygon(firstPoint)) {
@@ -131,11 +156,11 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
         }
         
         //check which islands each hole belongs to
-        for (vector<shared_ptr<Island::Hole>>::iterator holeIt = p_holes.begin(); holeIt != p_holes.end(); holeIt++) {
-            shared_ptr<Island::Hole> p_hole = *holeIt;
+        for (vector<shared_ptr<Island>>::iterator holeIt = p_holes.begin(); holeIt != p_holes.end(); holeIt++) {
+            shared_ptr<Island> p_hole = *holeIt;
             Vector3D firstPoint = p_hole->polygon().points()[0];
             
-            shared_ptr<Island::Hole> p_parentIsland = nullptr; //which island hole is inside of
+            shared_ptr<Island> p_parentIsland = nullptr; //which island hole is inside of
             for (vector<shared_ptr<Island>>::iterator islandIt = p_islands.begin(); islandIt != p_islands.end(); islandIt++) {
                 shared_ptr<Island> p_island = *islandIt;
                 
@@ -162,6 +187,5 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
             slice.addIsland(*it);
         }
     }
-    
     return pair<Slice, vector<shared_ptr<const MeshFace>>>(slice, p_intersectingFaces);
 }

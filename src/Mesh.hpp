@@ -19,6 +19,7 @@
 #include "Polygon.hpp"
 #include "Island.hpp"
 #include "Slice.hpp"
+#include "Plane.hpp"
 
 namespace mapmqp {
     //forward declarations to use pointers

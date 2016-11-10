@@ -19,10 +19,11 @@ namespace mapmqp {
 	// Class definition
 	class Slicer {
 	public:
-		// Constructor
+        
+        // Constructor
         Slicer(std::shared_ptr<const Mesh> p_mesh);
 
-		// Slice iterator
+	// Slice iterator
         Slice slice(const Plane & plane) const;
 
 	private:
