@@ -26,59 +26,6 @@ using namespace std;
 
 Mesh::Mesh() { }
 
-// void Mesh::constructSTLFromMesh(string stlFilePath){
-// 	ofstream file;
-
-// 	unsigned int twoByte = 0x0000;						//filler
-// 	int size = p_faces().size();						//number of faces in mesh
-
-// 	writeLog(INFO, "converting mesh to STL file %s...", stlFilePath.c_str());
-
-// 	file.open(stlFilePath.c_str(), ios::out | ios::binary);	// Open the file
-// 	if (file.is_open()) {                               // Check that we opened successfully
-
-// 		for(int i = 0; i < 40; i++){					//write 80 byte header. header is unused
-// 			file.write(reinterpret_cast<const char *>(&twoByte), 2);
-// 		}
-
-// 		file.write(reinterpret_cast<char*>(&size),4);
-
-// 		for (unsigned long i = 0; i < size; ++i) {		// Loop through all triangles
-// 			Vector3D normal = m_p_faces[i]->p_normal();
-// 			float normalX = (float)normal.x();
-// 			float normalY = (float)normal.y();
-// 			float normalZ = (float)normal.z();
-// 			float vertex1X = (float)m_p_faces[i]->p_vertex1()->vertex().x();
-// 			float vertex1Y = (float)m_p_faces[i]->p_vertex1()->vertex().y();
-// 			float vertex1Z = (float)m_p_faces[i]->p_vertex1()->vertex().z();
-// 			float vertex2X = (float)m_p_faces[i]->p_vertex2()->vertex().x();
-// 			float vertex2Y = (float)m_p_faces[i]->p_vertex2()->vertex().y();
-// 			float vertex2Z = (float)m_p_faces[i]->p_vertex2()->vertex().z();
-// 			float vertex3X = (float)m_p_faces[i]->p_vertex3()->vertex().x();
-// 			float vertex3Y = (float)m_p_faces[i]->p_vertex3()->vertex().y();
-// 			float vertex3Z = (float)m_p_faces[i]->p_vertex3()->vertex().z();
-
-// 			file.write((char *)&normalX, 4);
-// 			file.write((char *)&normalY, 4);
-// 			file.write((char *)&normalZ, 4);
-// 			file.write((char *)&vertex1X, 4);
-// 			file.write((char *)&vertex1Y, 4);
-// 			file.write((char *)&vertex1Z, 4);
-// 			file.write((char *)&vertex2X, 4);
-// 			file.write((char *)&vertex2Y, 4);
-// 			file.write((char *)&vertex2Z, 4);
-// 			file.write((char *)&vertex3X, 4);
-// 			file.write((char *)&vertex3Y, 4);
-// 			file.write((char *)&vertex3Z, 4);
-// 			file.write((char *)&twoByte, 2);
-// 		}
-
-// 		file.close();
-// 	}else {
-// 		writeLog(ERROR, "unable to open file %s [errno: %d]", stlFilePath.c_str(), strerror(errno));
-// 	}
-// }
-
 const vector<shared_ptr<MeshVertex>> & Mesh::p_vertices() const {
     return m_p_vertices;
 }
@@ -89,6 +36,22 @@ const vector<shared_ptr<MeshFace>> & Mesh::p_faces() const {
 
 void Mesh::addVertex(shared_ptr<MeshVertex> vertex) {
     m_p_vertices.push_back(vertex);
+}
+
+/**
+ * Applies a transformation to every Vertex in the Mesh
+ *
+ * @param function pointer that returns void and takes in a reference to a Vector3D and applies transformation to the Vector3D
+ */
+void Mesh::transform(void (*transformFnc)(Vector3D & v)) {
+    //TODO reset and rebuild lowest vertices
+    
+    for (vector<shared_ptr<MeshVertex>>::iterator it = m_p_vertices.begin(); it != m_p_vertices.end(); it++) {
+        shared_ptr<MeshVertex> p_vertex = *it;
+        transformFnc(p_vertex->m_vertex);
+    }
+    
+    //TODO fix face normal/area
 }
 
 /**
@@ -346,7 +309,11 @@ bool MeshFace::intersectsPlane(const Plane & plane) const {
     }
 }
 
-Vector3D MeshFace::p_normal(){
+double MeshFace::area() const {
+    return m_area;
+}
+
+const Vector3D & MeshFace::normal() const {
     return m_normal;
 }
 

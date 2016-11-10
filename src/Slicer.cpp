@@ -60,14 +60,12 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
         vector<Vector3D> polygonPoints;
         vector<shared_ptr<const MeshFace>> p_polygonMeshFaces;
         
-        //TODO determine somehow if polygon is hole inside of other polygon
-        
         shared_ptr<const MeshFace> p_startFace = p_face;
         shared_ptr<const MeshFace> p_currentFace = p_startFace;
         
         do {
             //add ptr to MeshFace to list of checked faces
-            mapped_p_checkedFaces.emplace(tuple<shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>, shared_ptr<const MeshVertex>>(p_currentFace->p_vertex(0), p_currentFace->p_vertex(1), p_currentFace->p_vertex(2)), p_currentFace);
+            mapped_p_checkedFaces.emplace(*p_currentFace, p_currentFace);
             
             //add ptr to MeshFace to hashtable of intersection faces
             p_intersectingFaces.push_back(p_currentFace);

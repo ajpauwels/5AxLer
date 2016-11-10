@@ -15,8 +15,8 @@
 namespace mapmqp {
 	class ProcessSTL {
 	public:
-		ProcessSTL(std::string stlFilePaths);
-		std::shared_ptr<Mesh> run();
+        static std::shared_ptr<Mesh> constructMeshFromSTL(std::string stlFilePath);
+        static bool constructSTLfromMesh(const Mesh & mesh, std::string stlFilePath);
 
 	private:
 		/**
@@ -28,10 +28,10 @@ namespace mapmqp {
 		        long y = (long)v.y();
 		        long z = (long)v.z();
 		        
-		        int hashVal = (int)(x ^ (x >> 32));
-		        hashVal = 31 * hashVal + (int)(y ^ (y >> 32));
-		        hashVal = 31 * hashVal + (int)(z ^ (z >> 32));
-		        return std::hash<int>()(hashVal);
+		        int hashVal = (uint32_t)(x ^ (x >> 32));
+		        hashVal = 31 * hashVal + (uint32_t)(y ^ (y >> 32));
+		        hashVal = 31 * hashVal + (uint32_t)(z ^ (z >> 32));
+		        return std::hash<uint32_t>()(hashVal);
 		    }
 		};
 
@@ -55,16 +55,17 @@ namespace mapmqp {
 		    }
 		};
 
-		std::shared_ptr<Mesh> m_p_mesh;
-		std::string m_stlFilePath;
-		std::unordered_map<Vector3D, std::shared_ptr<MeshVertex>, Vector3DHash> m_mapped_p_vertices;
-        std::unordered_map<std::shared_ptr<MeshEdge>, std::shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality> m_mapped_p_edges;
-        std::vector<std::shared_ptr<MeshVertex>> m_p_lowestVertices;
+		static std::shared_ptr<Mesh> s_p_mesh;
+		static std::unordered_map<Vector3D, std::shared_ptr<MeshVertex>, Vector3DHash> s_mapped_p_vertices;
+        static std::unordered_map<std::shared_ptr<MeshEdge>, std::shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality> s_mapped_p_edges;
+        static std::vector<std::shared_ptr<MeshVertex>> s_p_lowestVertices;
 
-		bool getFileHandler(std::ifstream& file);
-		std::shared_ptr<MeshVertex> addMeshVertex(std::shared_ptr<MeshVertex> p_vertex);
-		void addMeshFace(std::shared_ptr<MeshFace> p_face);
-		void constructMeshFromSTL();
+        static void resetVariables();
+		static std::shared_ptr<MeshVertex> addMeshVertex(std::shared_ptr<MeshVertex> p_vertex);
+        static void addMeshFace(std::shared_ptr<MeshFace> p_face);
+        
+        static bool getFileHandlerIn(std::ifstream& file, std::string filePath);
+        static bool getFileHandlerOut(std::ofstream& file, std::string filePath);
 	};
 }
 

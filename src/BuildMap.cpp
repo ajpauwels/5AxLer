@@ -190,10 +190,10 @@ Vector3D BuildMap::findValidVector() const {
 }
 
 Vector3D BuildMap::findBestVectorRecursive(int x, int y, int dx, int dy, double heuristic) const {
-    double north = weighVector(Vector3D(bAxisValToTheta((x + dx) % B_AXIS_RANGE), aAxisValToPhi(y)));
-    double south = weighVector(Vector3D(bAxisValToTheta((x - dx) % B_AXIS_RANGE), aAxisValToPhi(y)));
-    double east = weighVector(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y + dy) % A_AXIS_RANGE)));
-    double west = weighVector(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y - dy) % A_AXIS_RANGE)));
+    double north = weighVector(Vector3D(bAxisValToTheta((x + dx) % B_AXIS_RANGE), aAxisValToPhi(y))).first;
+    double south = weighVector(Vector3D(bAxisValToTheta((x - dx) % B_AXIS_RANGE), aAxisValToPhi(y))).first;
+    double east = weighVector(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y + dy) % A_AXIS_RANGE))).first;
+    double west = weighVector(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y - dy) % A_AXIS_RANGE))).first;
     
     double maxHeuristic = fmin(heuristic, fmin(north, fmin(south, fmin(east, west))));
     
@@ -225,19 +225,19 @@ Vector3D BuildMap::findBestVector() const {
     }
     
     Vector3D v = findValidVector();
-    double heuristic = weighVector(v);
+    double heuristic = weighVector(v).first;
     
     return findBestVectorRecursive(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi()), B_AXIS_RANGE / 2, A_AXIS_RANGE / 2, heuristic);
 }
 
-double BuildMap::weighVector(const Vector3D & v) const {
+pair<double, bool> BuildMap::weighVector(const Vector3D & v) const {
     if (!m_solved) {
         writeLog(WARNING, "BUILD MAP - weighing vector of unsolved build map");
-        return INFINITY;
+        return pair<double, bool>(INFINITY, false);
     }
     
     if (!checkVector(v)) {
-        return INFINITY;
+        return pair<double, bool>(INFINITY, false);
     }
     
     //uncomment lines of code to measure cusp height accurately instead of relatively
@@ -245,17 +245,26 @@ double BuildMap::weighVector(const Vector3D & v) const {
     double weight = 0;
     //double totalFaceArea;
     for (unsigned int i = 0; i < m_faceCount; i++) {
-#ifdef DEBUG_MODE
+//#ifdef DEBUG_MODE
+//        if (Vector3D::dotProduct(v, m_faceNormals[i]) > cos(THETA_MAX)) {
+//            writeLog(ERROR, "BUILD MAP - dotProduct(v, faceNormals[%d]) = %d > cos(THETA_MAX) = %d", i, Vector3D::dotProduct(v, m_faceNormals[i]), cos(THETA_MAX));
+//        }
+//#endif
+        
+        //
         if (Vector3D::dotProduct(v, m_faceNormals[i]) > cos(THETA_MAX)) {
-            writeLog(ERROR, "BUILD MAP - dotProduct(v, faceNormals[%d]) = %d > cos(THETA_MAX) = %d", i, Vector3D::dotProduct(v, m_faceNormals[i]), cos(THETA_MAX));
+            //writeLog(WARNING, "BUILD MAP - dotProduct(v, faceNormals[%d]) = %d > cos(THETA_MAX) = %d", i, Vector3D::dotProduct(v, m_faceNormals[i]), cos(THETA_MAX));
+            //return pair<double, bool>(INFINITY, false);
         }
-#endif
-        weight += Vector3D::dotProduct(v, m_faceNormals[i]) * m_faceAreas[i];
+        
+        double weightToAdd = Vector3D::dotProduct(v, m_faceNormals[i]) * m_faceAreas[i];
+        weightToAdd /= (v.magnitude() * m_faceNormals[i].magnitude());
+        weight += fabs(weightToAdd);
         //totalFaceArea += m_faceAreas[i];
     }
     //weight *= SLICE_THICKNESS;
     //weight /= totalFaceArea;
-    return weight;
+    return pair<double, bool>(weight, true);
 }
 
 int BuildMap::phiToAAxisRange(const Angle & phi) {

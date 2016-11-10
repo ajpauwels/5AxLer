@@ -37,6 +37,8 @@ namespace mapmqp {
         void addVertex(std::shared_ptr<MeshVertex> p_vertex);
         void addFace(std::shared_ptr<MeshFace> p_face);
         
+        void transform(void (*transformFnc)(Vector3D & v));
+        
     private:
         std::vector<std::shared_ptr<MeshVertex>> m_p_vertices;
         std::vector<std::shared_ptr<MeshFace>> m_p_faces;
@@ -97,7 +99,8 @@ namespace mapmqp {
         // Getters
         const std::shared_ptr<const MeshVertex> p_vertex(uint16_t v) const;
         const std::shared_ptr<const MeshFace> p_connectedFace(uint16_t f) const;
-        Vector3D p_normal();
+        double area() const;
+        const Vector3D & normal() const;
         
         //returns whether or not the face intersections with Plane
         bool intersectsPlane(const Plane & plane) const;

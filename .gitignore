@@ -31,8 +31,9 @@ build
 *.out
 *.app
 
-# Logs
-*.log
+# logs and debug folders
+logs
+debug
 
 # OXS files
 *.DS_Store

@@ -25,7 +25,7 @@ namespace mapmqp {
         bool checkVector(const Vector3D & v, bool includeEdges = true) const;
         Vector3D findValidVector() const;
         Vector3D findBestVector() const; //TODO parameters should be passed in neater fashion
-        double weighVector(const Vector3D & v) const;
+        std::pair<double, bool> weighVector(const Vector3D & v) const;
         
         static int phiToAAxisRange(const Angle & phi);
         static int thetaToBAxisRange(const Angle & theta);

@@ -26,6 +26,7 @@
 
 //end hardware variables
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <iostream>
@@ -36,8 +37,6 @@
 #include <string>
 
 #include <sys/stat.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 #include "../libs/rapidjson/document.h"
 
@@ -72,11 +71,12 @@ namespace mapmqp {
             mkdir("./logs", 0777);
             
             //open all log files
-            std::string logFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp.log";
+            std::string timeStr = Clock::wallTimeString("-", "_", "-");
+            std::string logFilePath = "./logs/" + timeStr + "_mapmqp.log";
 #ifdef PRINT_SEPERATE_LOGS
-            std::string logInfoFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-info.log";
-            std::string logWarningsFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-warnings.log";
-            std::string logErrorsFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-errors.log";
+            std::string logInfoFilePath = "./logs/" + timeStr + "_mapmqp-info.log";
+            std::string logWarningsFilePath = "./logs/" + timeStr + "_mapmqp-warnings.log";
+            std::string logErrorsFilePath = "./logs/" + timeStr + "_mapmqp-errors.log";
 #endif
             
             logFile = fopen(logFilePath.c_str(), "w+");
