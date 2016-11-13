@@ -13,7 +13,7 @@
 using namespace mapmqp;
 using namespace std;
 
-Island::Island(const Polygon & polygon, vector<shared_ptr<const MeshFace>> p_polygonMeshFaces, bool isHole) :
+Island::Island(const Polygon & polygon, vector<shared_ptr<const Mesh::Face>> p_polygonMeshFaces, bool isHole) :
 m_polygon(polygon),
 m_p_mainPolygonMeshFaces(p_polygonMeshFaces),
 m_isHole(isHole) { }
@@ -22,7 +22,7 @@ const Polygon & Island::polygon() const {
     return m_polygon;
 }
 
-const vector<shared_ptr<const MeshFace>> & Island::p_mainPolygonMeshFaces() const {
+const vector<shared_ptr<const Mesh::Face>> & Island::p_mainPolygonMeshFaces() const {
     return m_p_mainPolygonMeshFaces;
 }
 

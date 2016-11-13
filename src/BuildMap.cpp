@@ -17,10 +17,8 @@ using namespace mapmqp;
 using namespace std;
 using namespace ClipperLib;
 
-BuildMap::BuildMap(Vector3D faceNormals[], double faceAreas[], int faceCount) :
-m_faceNormals(faceNormals),
-m_faceAreas(faceAreas),
-m_faceCount(faceCount) { }
+BuildMap::BuildMap(std::shared_ptr<Mesh> p_mesh) :
+m_p_mesh(p_mesh) { }
 
 bool BuildMap::solve() {
     if (!m_solved) {
@@ -62,8 +60,9 @@ bool BuildMap::solve() {
         
         //remove all contraints from face normals
         Paths holes;
-        for (unsigned int i = 0; i < m_faceCount; i++) {
-            Vector3D v = m_faceNormals[i];
+        for (vector<shared_ptr<Mesh::Face>>::const_iterator it = m_p_mesh->p_faces().begin(); it != m_p_mesh->p_faces().end(); it++) {
+            Vector3D v = (*it)->normal();
+            v = v * -1;
             
             printf("v theta: %f phi: %f\n", v.theta().val(), v.phi().val());
             
@@ -309,12 +308,14 @@ double BuildMap::averageCuspHeight(const Vector3D & v) const {
     
     double weight = 0;
     double totalFaceArea;
-    for (unsigned int i = 0; i < m_faceCount; i++) {
-        double weightToAdd = Vector3D::dotProduct(v, m_faceNormals[i]) * m_faceAreas[i];
-        weightToAdd /= (v.magnitude() * m_faceNormals[i].magnitude());
+    for (vector<shared_ptr<Mesh::Face>>::const_iterator it = m_p_mesh->p_faces().begin(); it != m_p_mesh->p_faces().end(); it++) {
+        shared_ptr<Mesh::Face> p_face = *it;
+        
+        double weightToAdd = Vector3D::dotProduct(v, p_face->normal()) * p_face->area();
+        weightToAdd /= (v.magnitude() * p_face->normal().magnitude());
         weight += fabs(weightToAdd);
         
-        totalFaceArea += m_faceAreas[i];
+        totalFaceArea += p_face->area();
     }
     weight *= SLICE_THICKNESS;
     weight /= totalFaceArea;

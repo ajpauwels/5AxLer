@@ -31,7 +31,7 @@ bool BuildMapToMATLAB::parseBuildMapToMATLAB(string filePath, const BuildMap & b
         for (int y = 0; y <= A_AXIS_DISCRETE_POINTS; y += precision) {
             for (int x = 0; x <= B_AXIS_DISCRETE_POINTS; x += precision) {
                 Vector3D v = BuildMap::mapToVector(x, y);
-                double weight = buildMap.checkVector(v) ? buildMap.weighVector(v) : -1;
+                double weight = buildMap.checkVector(v) ? buildMap.averageCuspHeight(v) : -1;
                 
                 if (type == PLANE) {
                     xStr << x << " ";

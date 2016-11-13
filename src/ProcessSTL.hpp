@@ -20,7 +20,7 @@ namespace mapmqp {
 
 	private:
 		/**
-		 * Creates a hash value for a MeshVertex using the vertex's vector
+		 * Creates a hash value for a Mesh::Vertex using the vertex's vector
 		 */
 		struct Vector3DHash {
 		    std::size_t operator()(const Vector3D & v) const {
@@ -36,10 +36,10 @@ namespace mapmqp {
 		};
 
 		/**
-		 * Creates a hash value for a MeshEdge object using its vertices
+		 * Creates a hash value for a Mesh::Edge object using its vertices
 		 */
 		struct MeshEdgePtrHash {
-		    std::size_t operator()(const std::shared_ptr<MeshEdge> & p_me) const {
+		    std::size_t operator()(const std::shared_ptr<Mesh::Edge> & p_me) const {
 		        Vector3DHash v3hasher;
 
 		        int hash = 17;
@@ -50,19 +50,13 @@ namespace mapmqp {
 		};
 
 		struct MeshEdgePtrEquality {
-		    bool operator()(const std::shared_ptr<MeshEdge> & p_edge1, const std::shared_ptr<MeshEdge> & p_edge2) const {
+		    bool operator()(const std::shared_ptr<Mesh::Edge> & p_edge1, const std::shared_ptr<Mesh::Edge> & p_edge2) const {
 		        return *p_edge1 == *p_edge2;
 		    }
 		};
 
-		static std::shared_ptr<Mesh> s_p_mesh;
-		static std::unordered_map<Vector3D, std::shared_ptr<MeshVertex>, Vector3DHash> s_mapped_p_vertices;
-        static std::unordered_map<std::shared_ptr<MeshEdge>, std::shared_ptr<MeshFace>, MeshEdgePtrHash, MeshEdgePtrEquality> s_mapped_p_edges;
-        static std::vector<std::shared_ptr<MeshVertex>> s_p_lowestVertices;
-
-        static void resetVariables();
-		static std::shared_ptr<MeshVertex> addMeshVertex(std::shared_ptr<MeshVertex> p_vertex);
-        static void addMeshFace(std::shared_ptr<MeshFace> p_face);
+        static std::shared_ptr<Mesh::Vertex> addMeshVertex(std::shared_ptr<Mesh> p_mesh, std::shared_ptr<Mesh::Vertex> p_vertex, std::unordered_map<Vector3D, std::shared_ptr<Mesh::Vertex>, ProcessSTL::Vector3DHash> & mapped_p_vertices);
+        static void addMeshFace(std::shared_ptr<Mesh> p_mesh, std::shared_ptr<Mesh::Face> p_face, std::unordered_map<std::shared_ptr<Mesh::Edge>, std::shared_ptr<Mesh::Face>, ProcessSTL::MeshEdgePtrHash, ProcessSTL::MeshEdgePtrEquality> & mapped_p_edges);
         
         static bool getFileHandlerIn(std::ifstream& file, std::string filePath);
         static bool getFileHandlerOut(std::ofstream& file, std::string filePath);

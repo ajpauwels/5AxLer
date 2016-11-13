@@ -9,16 +9,19 @@
 #ifndef BuildMap_hpp
 #define BuildMap_hpp
 
+#include <memory>
+
 #include "../libs/clipper/clipper.hpp"
 
 #include "Utility.hpp"
 #include "Vector3D.hpp"
 #include "Angle.hpp"
+#include "Mesh.hpp"
 
 namespace mapmqp {
     class BuildMap {
     public:
-        BuildMap(Vector3D faceNormals[], double faceAreas[], int faceCount);
+        BuildMap(std::shared_ptr<Mesh> p_mesh);
         
         bool solve();
         double area() const;
@@ -35,10 +38,7 @@ namespace mapmqp {
         static Angle aAxisValToPhi(double aAxisVal);
         
     private:
-        //surface info
-        Vector3D * m_faceNormals;
-        double * m_faceAreas;
-        unsigned int m_faceCount;
+        std::shared_ptr<Mesh> m_p_mesh;
         
         ClipperLib::Paths m_buildMap2D; //x->theta, y->phi
         bool m_solved = false;

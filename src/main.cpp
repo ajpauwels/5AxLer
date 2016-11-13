@@ -18,6 +18,7 @@
 #include <stdio.h>
 
 //for debugging
+//TODO remove these
 #include "../libs/clipper/clipper.hpp"
 #include "Mesh.hpp"
 #include "Utility.hpp"
@@ -66,9 +67,9 @@ int main(int argc, const char * argv[]) {
     /* testing ProcessSTL */
     
     std::shared_ptr<mapmqp::Mesh> p_mesh = ProcessSTL::constructMeshFromSTL(argv[1]);
-    const std::vector<std::shared_ptr<mapmqp::MeshFace>> meshFaces = p_mesh->p_faces();
+    const std::vector<std::shared_ptr<mapmqp::Mesh::Face>> meshFaces = p_mesh->p_faces();
     for (uint32_t i = 0; i < meshFaces.size(); ++i) {
-        const std::shared_ptr<mapmqp::MeshFace> currFace = meshFaces[i];
+        const std::shared_ptr<mapmqp::Mesh::Face> currFace = meshFaces[i];
         
         printf("Face vertices are:\n");
         for (uint16_t j = 0; j < 3; ++j) {
@@ -78,7 +79,7 @@ int main(int argc, const char * argv[]) {
         printf("Connected faces are:\n");
         for (uint16_t j = 0; j < 3; ++j) {
             printf("%d.)", j);
-            const std::shared_ptr<const mapmqp::MeshFace> connFace = currFace->p_connectedFace(j);
+            const std::shared_ptr<const mapmqp::Mesh::Face> connFace = currFace->p_connectedFace(j);
             for (uint16_t k = 0; k < 3; ++k) {
                 printf("\t[%f, %f, %f]", connFace->p_vertex(k)->vertex().x(), connFace->p_vertex(k)->vertex().y(), connFace->p_vertex(k)->vertex().z());
             }
@@ -90,79 +91,8 @@ int main(int argc, const char * argv[]) {
     
     ProcessSTL::constructSTLfromMesh(*p_mesh, "debug/TestSTL.STL");
     
-    //    ClipperLib::Clipper clip;
-    //    ClipperLib::Path poly;
-    //    poly << ClipperLib::IntPoint(0, 0) << ClipperLib::IntPoint(0, 10) << ClipperLib::IntPoint(10, 10) << ClipperLib::IntPoint(10, 0);
-    //    printf("area: %f\n", ClipperLib::Area(poly));
-    //    printf("in poly: %s\n", ClipperLib::PointInPolygon(ClipperLib::IntPoint(5, 5), poly) ? "true" : "false");
-    
-    ClipperLib::Clipper clipper;
-    ClipperLib::Paths polys;
-    ClipperLib::Path p1;
-    ClipperLib::Path p2;
-    ClipperLib::Path p3;
-    ClipperLib::Path p4;
-    
-    p1 << ClipperLib::IntPoint(10, 10) << ClipperLib::IntPoint(100, 10) << ClipperLib::IntPoint(100, 100) << ClipperLib::IntPoint(10, 100);
-    p2 << ClipperLib::IntPoint(20, 20) << ClipperLib::IntPoint(20, 90) << ClipperLib::IntPoint(90, 90) << ClipperLib::IntPoint(90, 20);
-    p3 << ClipperLib::IntPoint(30, 30) << ClipperLib::IntPoint(50, 30) << ClipperLib::IntPoint(50, 50) << ClipperLib::IntPoint(30, 50);
-    p4 << ClipperLib::IntPoint(60, 60) << ClipperLib::IntPoint(80, 60) << ClipperLib::IntPoint(80, 80) << ClipperLib::IntPoint(60, 80);
-    
-    clipper.AddPath(p4, ClipperLib::ptSubject, true);
-    clipper.AddPath(p1, ClipperLib::ptSubject, true);
-    clipper.AddPath(p3, ClipperLib::ptSubject, true);
-    clipper.AddPath(p2, ClipperLib::ptSubject, true);
-    
-    ClipperLib::PolyTree solution;
-    
-    clipper.Execute(ClipperLib::ctUnion, solution);
-    solution.Total();
-    
-    //Slice slice = Slicer(p_mesh).slice(Plane(Vector3D(0, 0, 1), 100));
-    //slice.p_islands();
-    
-    //testing build map
-    srand(16);
-    mapmqp::Clock timer;
-    
-#define THETA_POLE M_PI
-#define PHI_POLE (M_PI / 2)
-#define VECTOR_DIVERGENCE M_PI_2
-#define MAX_AREA 40.0
-    
-#define n 1
-    
-    mapmqp::Vector3D faceNormals[n];
-    double faceAreas[n];
-    
-    faceNormals[0] = Vector3D(Angle(0), Angle(M_PI_2));
-    //faceNormals[1] = Vector3D(Angle(M_PI_2), Angle(M_PI_2 / 2));
-    
-    faceAreas[0] = 10;
-    //faceAreas[1] = 20;
-    
-//    for (int i = 0; i < n; i++) {
-//        if (i % 1000 == 0) {
-//            printf("i: %d\n", i);
-//        }
-//        
-//        //randomly divert from pole with range of (-divergence, divergence) radians in either direction
-//        mapmqp::Angle theta(THETA_POLE + ((((rand() % 2) == 0) ? 1 : -1) * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/VECTOR_DIVERGENCE))));
-//        mapmqp::Angle phi(PHI_POLE + ((((rand() % 2) == 0) ? 1 : -1) * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/VECTOR_DIVERGENCE))));
-//        
-//        faceNormals[i] = mapmqp::Vector3D(theta, phi);
-//        
-//        faceAreas[i] = 10.0 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX/MAX_AREA);
-//        
-//        //map.addConstraintVector(mapmqp::Vector3D(theta, phi));
-//    }
-    printf("random surface data generated: %ldms\n", timer.delta());
-    
-    mapmqp::BuildMap map(faceNormals, faceAreas, n);
+    mapmqp::BuildMap map(p_mesh);
     map.solve();
-    
-    printf("build map constructed: %ldms\n", timer.delta());
-    
     BuildMapToMATLAB::parseBuildMapToMATLAB("debug/buildmap-plane.m", map, BuildMapToMATLAB::PLANE, 25);
     BuildMapToMATLAB::parseBuildMapToMATLAB("debug/buildmap-sphere.m", map, BuildMapToMATLAB::SPHERE, 25);
     BuildMapToMATLAB::parseBuildMapToMATLAB("debug/buildmap-sphere-smooth.m", map, BuildMapToMATLAB::SPHERE_SMOOTH, 25);

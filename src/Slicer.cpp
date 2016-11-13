@@ -18,8 +18,8 @@ m_p_mesh(p_mesh) { }
 
 Slice Slicer::slice(const Plane & plane) const {
     //TODO is this a good way to do this?
-    vector<shared_ptr<const MeshFace>> p_faces;
-    for (vector<shared_ptr<MeshFace>>::const_iterator it = m_p_mesh->p_faces().begin(); it != m_p_mesh->p_faces().end(); it++) {
+    vector<shared_ptr<const Mesh::Face>> p_faces;
+    for (vector<shared_ptr<Mesh::Face>>::const_iterator it = m_p_mesh->p_faces().begin(); it != m_p_mesh->p_faces().end(); it++) {
         p_faces.push_back(*it);
     }
     return slice(plane, p_faces).first;
@@ -32,39 +32,39 @@ Slice Slicer::slice(const Plane & plane) const {
  * @param plane A Plane object representing the slicing plane
  * @param p_facesSearchSpace A vector of pointers to mesh faces which will be sliced
  *
- * @return A pair containing the Slice object as its first element, and a vector of MeshFace
+ * @return A pair containing the Slice object as its first element, and a vector of Mesh::Face
  *         pointers aligned with that slice as the second object
  */
-pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plane, const vector<shared_ptr<const MeshFace>> & p_facesSearchSpace) const {
+pair<Slice, vector<shared_ptr<const Mesh::Face>>> Slicer::slice(const Plane & plane, const vector<shared_ptr<const Mesh::Face>> & p_facesSearchSpace) const {
     // Create the return slice with the plane it's on
     Slice slice(plane);
 
-    // Our vector of MeshFace objects located on the slice
-    vector<shared_ptr<const MeshFace>> p_intersectingFaces;
+    // Our vector of Mesh::Face objects located on the slice
+    vector<shared_ptr<const Mesh::Face>> p_intersectingFaces;
     
     /**
-     * Hashes a MeshFace pointer. Note that this function hashes the
-     * pointer, not the actual values of the vertices in the MeshFace.
+     * Hashes a Mesh::Face pointer. Note that this function hashes the
+     * pointer, not the actual values of the vertices in the Mesh::Face.
      */
     struct MeshFaceHash {
-        size_t operator()(const shared_ptr<const MeshFace> & p_meshFace) const {
-            return hash<shared_ptr<const MeshFace>>()(p_meshFace);
+        size_t operator()(const shared_ptr<const Mesh::Face> & p_meshFace) const {
+            return hash<shared_ptr<const Mesh::Face>>()(p_meshFace);
         }
     };
     
     // Stores the vertices that have already been evaluated by mapping its three vertices to a reference to the face
-    unordered_map<shared_ptr<const MeshFace>, shared_ptr<const MeshFace>, MeshFaceHash> mapped_p_checkedFaces;
+    unordered_map<shared_ptr<const Mesh::Face>, shared_ptr<const Mesh::Face>, MeshFaceHash> mapped_p_checkedFaces;
     
     // List of islands pre-ordering
     vector<shared_ptr<Island>> p_islands;
 
-    // List of hole polygons and corresponding MeshFaces
+    // List of hole polygons and corresponding Mesh::Faces
     vector<shared_ptr<Island>> p_holes;
     
     // Iterate through all faces in the search space
-    for (vector<shared_ptr<const MeshFace>>::const_iterator it = p_facesSearchSpace.begin(); it != p_facesSearchSpace.end(); it++) {
-        // Grab the actual MeshFace pointer from the iterator
-        shared_ptr<const MeshFace> p_face = *it;
+    for (vector<shared_ptr<const Mesh::Face>>::const_iterator it = p_facesSearchSpace.begin(); it != p_facesSearchSpace.end(); it++) {
+        // Grab the actual Mesh::Face pointer from the iterator
+        shared_ptr<const Mesh::Face> p_face = *it;
 
         // Get some information about the face in relation to the slice
         bool alreadyMapped;
@@ -76,22 +76,22 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
         bool intersectsPlane = p_face->intersectsPlane(plane);
         bool liesOnPlane = p_face->liesOnPlane(plane);
 
-        writeLog(INFO, "slicing MeshFace: %s\n", p_face->toString().c_str());
+        writeLog(INFO, "slicing Mesh::Face: %s\n", p_face->toString().c_str());
         
         // Check we've never seen this face, it intersects the plane, and it doesn't lie on the plane
         if (!alreadyMapped && intersectsPlane && !liesOnPlane) {
             // Cycle around faces until circle is complete
             vector<Vector3D> polygonPoints;
-            vector<shared_ptr<const MeshFace>> p_polygonMeshFaces;
+            vector<shared_ptr<const Mesh::Face>> p_polygonMeshFaces;
             
-            shared_ptr<const MeshFace> p_startFace = p_face;
-            shared_ptr<const MeshFace> p_currentFace = p_startFace;
+            shared_ptr<const Mesh::Face> p_startFace = p_face;
+            shared_ptr<const Mesh::Face> p_currentFace = p_startFace;
             
             do {
-                //add ptr to MeshFace to list of checked faces
+                //add ptr to Mesh::Face to list of checked faces
                 mapped_p_checkedFaces.emplace(p_currentFace, p_currentFace);
                 
-                //add ptr to MeshFace to hashtable of intersection faces
+                //add ptr to Mesh::Face to hashtable of intersection faces
                 p_intersectingFaces.push_back(p_currentFace);
                 
                 pair<Vector3D, Vector3D> intersectionLine = p_currentFace->planeIntersection(plane);
@@ -187,5 +187,5 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
             slice.addIsland(*it);
         }
     }
-    return pair<Slice, vector<shared_ptr<const MeshFace>>>(slice, p_intersectingFaces);
+    return pair<Slice, vector<shared_ptr<const Mesh::Face>>>(slice, p_intersectingFaces);
 }
