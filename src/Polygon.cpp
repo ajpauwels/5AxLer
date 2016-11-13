@@ -36,6 +36,7 @@ m_points(points) {
     
     m_plane = Plane(planeNormal, t);
     
+    //TODO TODO TODO these axes sholdn't be "arbitrary"!!!
     //find arbitrary x and y axes of polygon plane such that dot(x, planeNormal) = dot(y, planeNormal) = 0
     m_planeAxisX = m_points[1] - m_points[0]; //x axis can be any vector on plane
     m_planeAxisX.normalize();

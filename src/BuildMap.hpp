@@ -24,26 +24,28 @@ namespace mapmqp {
         double area() const;
         bool checkVector(const Vector3D & v, bool includeEdges = true) const;
         Vector3D findValidVector() const;
-        Vector3D findBestVector() const; //TODO parameters should be passed in neater fashion
-        std::pair<double, bool> weighVector(const Vector3D & v) const;
+        Vector3D findBestVector() const;
+        double averageCuspHeight(const Vector3D & v) const;
         
-        static int phiToAAxisRange(const Angle & phi);
+        static Vector3D mapToVector(int x, int y);
+        static std::pair<int, int> vector3DToMap(const Vector3D & v);
         static int thetaToBAxisRange(const Angle & theta);
-        static Angle aAxisValToPhi(double aAxisVal);
+        static int phiToAAxisRange(const Angle & phi);
         static Angle bAxisValToTheta(double bAxisVal);
+        static Angle aAxisValToPhi(double aAxisVal);
         
-    private: //TODO make private - just for debugging
+    private:
         //surface info
         Vector3D * m_faceNormals;
         double * m_faceAreas;
         unsigned int m_faceCount;
         
-        //x->theta, y->phi
-        ClipperLib::Paths m_buildMap2D;
+        ClipperLib::Paths m_buildMap2D; //x->theta, y->phi
         bool m_solved = false;
+        bool m_phiZeroAvailable = true; //whether or not the point at phi = 0 is true
         
         Vector3D findValidVectorRecursive(int xStart, int yStart, int width, int height) const;
-        Vector3D findBestVectorRecursive(int x, int y, int dx, int dy, double heuristic) const;
+        std::pair<Vector3D, double> findBestVectorRecursive(int x, int y, int dx, int dy, double prevHeuristic) const;
     };
 }
 

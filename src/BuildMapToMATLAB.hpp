@@ -19,7 +19,8 @@ namespace mapmqp {
     public:
         enum OutputType {
             PLANE,
-            SPHERE
+            SPHERE,
+            SPHERE_SMOOTH
         };
         
         static bool parseBuildMapToMATLAB(std::string filePath, const BuildMap & buildMap, OutputType type, int precision = 1);

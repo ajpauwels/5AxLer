@@ -17,10 +17,15 @@
 
 //hardware variables
 
-#define THETA_MAX 2.35619449019 //in radians (should be between 0-pi)
+#define THETA_MAX 0.785398163397448309616 //in radians (should be between 0-pi)
 
-#define A_AXIS_RANGE 1800
-#define B_AXIS_RANGE 3600
+#define A_AXIS_RANGE_DEGREES 90.0
+#define A_AXIS_PRECISION_DEGREES 0.1
+#define A_AXIS_DISCRETE_POINTS (int)(A_AXIS_RANGE_DEGREES / A_AXIS_PRECISION_DEGREES)
+
+#define B_AXIS_PRECISION_DEGREES 0.1
+#define B_AXIS_RANGE_DEGREES 360.0
+#define B_AXIS_DISCRETE_POINTS (int)(B_AXIS_RANGE_DEGREES / B_AXIS_PRECISION_DEGREES)
 
 #define SLICE_THICKNESS 1
 

@@ -8,8 +8,6 @@
 
 #include "Angle.hpp"
 
-#include <cmath>
-
 using namespace mapmqp;
 
 /**

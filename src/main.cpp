@@ -130,26 +130,32 @@ int main(int argc, const char * argv[]) {
 #define VECTOR_DIVERGENCE M_PI_2
 #define MAX_AREA 40.0
     
-#define n 5
+#define n 1
     
     mapmqp::Vector3D faceNormals[n];
     double faceAreas[n];
     
-    for (int i = 0; i < n; i++) {
-        if (i % 1000 == 0) {
-            printf("i: %d\n", i);
-        }
-        
-        //randomly divert from pole with range of (-divergence, divergence) radians in either direction
-        mapmqp::Angle theta(THETA_POLE + ((((rand() % 2) == 0) ? 1 : -1) * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/VECTOR_DIVERGENCE))));
-        mapmqp::Angle phi(PHI_POLE + ((((rand() % 2) == 0) ? 1 : -1) * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/VECTOR_DIVERGENCE))));
-        
-        faceNormals[i] = mapmqp::Vector3D(theta, phi);
-        
-        faceAreas[i] = static_cast <float> (rand()) / static_cast <float> (RAND_MAX/MAX_AREA);
-        
-        //map.addConstraintVector(mapmqp::Vector3D(theta, phi));
-    }
+    faceNormals[0] = Vector3D(Angle(0), Angle(M_PI_2));
+    //faceNormals[1] = Vector3D(Angle(M_PI_2), Angle(M_PI_2 / 2));
+    
+    faceAreas[0] = 10;
+    //faceAreas[1] = 20;
+    
+//    for (int i = 0; i < n; i++) {
+//        if (i % 1000 == 0) {
+//            printf("i: %d\n", i);
+//        }
+//        
+//        //randomly divert from pole with range of (-divergence, divergence) radians in either direction
+//        mapmqp::Angle theta(THETA_POLE + ((((rand() % 2) == 0) ? 1 : -1) * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/VECTOR_DIVERGENCE))));
+//        mapmqp::Angle phi(PHI_POLE + ((((rand() % 2) == 0) ? 1 : -1) * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/VECTOR_DIVERGENCE))));
+//        
+//        faceNormals[i] = mapmqp::Vector3D(theta, phi);
+//        
+//        faceAreas[i] = 10.0 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX/MAX_AREA);
+//        
+//        //map.addConstraintVector(mapmqp::Vector3D(theta, phi));
+//    }
     printf("random surface data generated: %ldms\n", timer.delta());
     
     mapmqp::BuildMap map(faceNormals, faceAreas, n);
@@ -157,10 +163,9 @@ int main(int argc, const char * argv[]) {
     
     printf("build map constructed: %ldms\n", timer.delta());
     
-    printf("%f\n", BuildMap::bAxisValToTheta(B_AXIS_RANGE - 1).val());
-    
     BuildMapToMATLAB::parseBuildMapToMATLAB("debug/buildmap-plane.m", map, BuildMapToMATLAB::PLANE, 25);
     BuildMapToMATLAB::parseBuildMapToMATLAB("debug/buildmap-sphere.m", map, BuildMapToMATLAB::SPHERE, 25);
+    BuildMapToMATLAB::parseBuildMapToMATLAB("debug/buildmap-sphere-smooth.m", map, BuildMapToMATLAB::SPHERE_SMOOTH, 25);
     
     /*map.checkVector(mapmqp::Vector3D(mapmqp::Angle(0), mapmqp::Angle(0)));
      

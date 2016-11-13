@@ -9,6 +9,8 @@
 #ifndef Angle_hpp
 #define Angle_hpp
 
+#include <cmath>
+
 namespace mapmqp {
     class Angle {
     public:
@@ -21,6 +23,9 @@ namespace mapmqp {
         
         // Setters
         void val(double val);
+        
+        static double radiansToDegrees(double radians) { return radians * 180.0 / M_PI; }
+        static double degreesToRadians(double degrees) { return degrees * M_PI / 180.0; }
         
     private:
         double m_val;                                    // The angle value

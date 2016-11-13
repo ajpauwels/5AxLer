@@ -22,7 +22,7 @@ using namespace std;
 
 //Mesh class functions
 
-//TODO add fault tolerance for hashing and lowest vertices
+//TODO add fault tolerance for hashing and lowest vertices - this might already be covered with the initial rounding?
 
 Mesh::Mesh() { }
 
@@ -51,7 +51,17 @@ void Mesh::transform(void (*transformFnc)(Vector3D & v)) {
         transformFnc(p_vertex->m_vertex);
     }
     
-    //TODO fix face normal/area
+    for (vector<shared_ptr<MeshFace>>::iterator it = m_p_faces.begin(); it != m_p_faces.end(); it++) {
+        shared_ptr<MeshFace> p_face = *it;
+        
+        //take cross product of (v1 - v0) and (v2 - v0)
+        Vector3D normalUnnormalized = Vector3D::crossProduct(m_p_vertices[1]->vertex() - m_p_vertices[0]->vertex(), m_p_vertices[2]->vertex() - m_p_vertices[0]->vertex());
+        //area is equal to half the magnitude of a cross product
+        p_face->m_area = normalUnnormalized.magnitude() / 2;
+        //normalize normal
+        p_face->m_normal = normalUnnormalized;
+        p_face->m_normal.normalize();
+    }
 }
 
 /**
@@ -185,13 +195,13 @@ string MeshEdge::toString() const {
  * @param v2 The second vertex, counter-clockwise from the first
  * @param v3 The third and final vertex
  */
-MeshFace::MeshFace(shared_ptr<const MeshVertex> v1, shared_ptr<const MeshVertex> v2, shared_ptr<const MeshVertex> v3) {
+MeshFace::MeshFace(shared_ptr<const MeshVertex> v0, shared_ptr<const MeshVertex> v1, shared_ptr<const MeshVertex> v2) {
     // Set the vertices array
-    m_p_vertices[0] = v1;
-    m_p_vertices[1] = v2;
-    m_p_vertices[2] = v3;
+    m_p_vertices[0] = v0;
+    m_p_vertices[1] = v1;
+    m_p_vertices[2] = v2;
     
-    //take cross product of (y - z) and (y - z)
+    //take cross product of (v1 - v0) and (v2 - v0)
     Vector3D normalUnnormalized = Vector3D::crossProduct(m_p_vertices[1]->vertex() - m_p_vertices[0]->vertex(), m_p_vertices[2]->vertex() - m_p_vertices[0]->vertex());
     //area is equal to half the magnitude of a cross product
     m_area = normalUnnormalized.magnitude() / 2;

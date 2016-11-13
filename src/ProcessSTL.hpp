@@ -23,8 +23,8 @@ namespace mapmqp {
 		 * Creates a hash value for a MeshVertex using the vertex's vector
 		 */
 		struct Vector3DHash {
-		    std::size_t operator()(const Vector3D & v) const { //TODO use sizeof(long) instead? should they be longs or ints
-		        long x = (long)v.x();
+		    std::size_t operator()(const Vector3D & v) const {
+                long x = (long)v.x();
 		        long y = (long)v.y();
 		        long z = (long)v.z();
 		        

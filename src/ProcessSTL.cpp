@@ -215,7 +215,6 @@ bool ProcessSTL::constructSTLfromMesh(const Mesh & mesh, string stlFilePath) {
     writeLog(INFO, "converting mesh to STL file %s...", stlFilePath.c_str());
     
     if (getFileHandlerOut(file, stlFilePath)) {            // Check that we opened successfully
-        
         for(int i = 0; i < 40; i++){					//write 80 byte header. header is unused
             file.write(reinterpret_cast<const char *>(&twoByte), 2);
         }
@@ -228,28 +227,28 @@ bool ProcessSTL::constructSTLfromMesh(const Mesh & mesh, string stlFilePath) {
             float normalX = (float)normal.x();
             float normalY = (float)normal.y();
             float normalZ = (float)normal.z();
-            float vertex1X = (float)p_faces[i]->p_vertex(0)->vertex().x();
-            float vertex1Y = (float)p_faces[i]->p_vertex(0)->vertex().y();
-            float vertex1Z = (float)p_faces[i]->p_vertex(0)->vertex().z();
-            float vertex2X = (float)p_faces[i]->p_vertex(1)->vertex().x();
-            float vertex2Y = (float)p_faces[i]->p_vertex(1)->vertex().y();
-            float vertex2Z = (float)p_faces[i]->p_vertex(1)->vertex().z();
-            float vertex3X = (float)p_faces[i]->p_vertex(2)->vertex().x();
-            float vertex3Y = (float)p_faces[i]->p_vertex(2)->vertex().y();
-            float vertex3Z = (float)p_faces[i]->p_vertex(2)->vertex().z();
+            float vertex0X = (float)p_faces[i]->p_vertex(0)->vertex().x();
+            float vertex0Y = (float)p_faces[i]->p_vertex(0)->vertex().y();
+            float vertex0Z = (float)p_faces[i]->p_vertex(0)->vertex().z();
+            float vertex1X = (float)p_faces[i]->p_vertex(1)->vertex().x();
+            float vertex1Y = (float)p_faces[i]->p_vertex(1)->vertex().y();
+            float vertex1Z = (float)p_faces[i]->p_vertex(1)->vertex().z();
+            float vertex2X = (float)p_faces[i]->p_vertex(2)->vertex().x();
+            float vertex2Y = (float)p_faces[i]->p_vertex(2)->vertex().y();
+            float vertex2Z = (float)p_faces[i]->p_vertex(2)->vertex().z();
             
             file.write((char *)&normalX, 4);
             file.write((char *)&normalY, 4);
             file.write((char *)&normalZ, 4);
+            file.write((char *)&vertex0X, 4);
+            file.write((char *)&vertex0Y, 4);
+            file.write((char *)&vertex0Z, 4);
             file.write((char *)&vertex1X, 4);
             file.write((char *)&vertex1Y, 4);
             file.write((char *)&vertex1Z, 4);
             file.write((char *)&vertex2X, 4);
             file.write((char *)&vertex2Y, 4);
             file.write((char *)&vertex2Z, 4);
-            file.write((char *)&vertex3X, 4);
-            file.write((char *)&vertex3Y, 4);
-            file.write((char *)&vertex3Z, 4);
             file.write((char *)&twoByte, 2);
         }
         
