@@ -12,14 +12,22 @@
 
 #include <memory>
 
+#include "Vector3D.hpp"
 #include "Plane.hpp"
 #include "Mesh.hpp"
-#include "Slice.hpp"
+#include "Island.hpp"
 
 namespace mapmqp {
 	// Class definition
 	class Slicer {
 	public:
+        struct Slice {
+            Slice(Plane plane, std::vector<std::shared_ptr<const Island>> p_islands) :
+            plane(plane), p_islands(p_islands) { }
+            
+            Plane plane;
+            std::vector<std::shared_ptr<const Island>> p_islands;
+        };
         
         // Constructor
         Slicer(std::shared_ptr<const Mesh> p_mesh);

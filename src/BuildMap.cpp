@@ -64,8 +64,6 @@ bool BuildMap::solve() {
             Vector3D v = (*it)->normal();
             v = v * -1;
             
-            printf("v theta: %f phi: %f\n", v.theta().val(), v.phi().val());
-            
             if (v.phi().val() == 0) {
                 m_phiZeroAvailable = false;
                 
@@ -186,7 +184,24 @@ bool BuildMap::checkVector(const Vector3D & v, bool includeEdges) const {
     return (includeEdges ? (pointIn != 0) : (pointIn == 1));
 }
 
-Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, int height) const {
+Vector3D BuildMap::findValidVector() const {
+    if (!m_solved) {
+        writeLog(WARNING, "BUILD MAP - finding valid vector of unsolved build map");
+        return Vector3D(0, 0, 0);
+    } else if (area() == 0) {
+        return Vector3D(0, 0, 0);
+    }
+    
+    //TODO can this just be done by grabbing a point from the outline of m_buildMap2D?
+    
+    Vector3D v = findValidVectorUtil(0, 0, B_AXIS_DISCRETE_POINTS, A_AXIS_DISCRETE_POINTS);
+    if (!checkVector(v)) {
+        writeLog(ERROR, "BUILD MAP - arbitrary vector(%f, %f, %f) not in buildmap", v.x(), v.y(), v.z());
+    }
+    return v;
+}
+
+Vector3D BuildMap::findValidVectorUtil(int xStart, int yStart, int width, int height) const {
 #ifdef DEBUG_MODE
     //writeLog(INFO, "BUILD MAP - checking build map theta(%d-%d) phi(%d-%d)", xStart, xStart + width, yStart, yStart + height);
 #endif
@@ -222,31 +237,30 @@ Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, i
         searchSuccess = false;
     }
     
-    return findValidVectorRecursive(xStart + width - dx, yStart + height - dy, dx, dy);
+    return findValidVectorUtil(xStart + width - dx, yStart + height - dy, dx, dy);
 }
 
-Vector3D BuildMap::findValidVector() const {
+Vector3D BuildMap::findBestVector() const {
     if (!m_solved) {
-        writeLog(WARNING, "BUILD MAP - finding valid vector of unsolved build map");
-        return Vector3D(0, 0, 0);
-    } else if (area() == 0) {
+        writeLog(WARNING, "BUILD MAP - finding best vector of unsolved build map");
         return Vector3D(0, 0, 0);
     }
     
-    Vector3D v = findValidVectorRecursive(0, 0, B_AXIS_DISCRETE_POINTS, A_AXIS_DISCRETE_POINTS);
-    if (!checkVector(v)) {
-        writeLog(ERROR, "BUILD MAP - arbitrary vector(%f, %f, %f) not in buildmap", v.x(), v.y(), v.z());
-    }
-    return v;
+    //TODO it may be possible build map is disjoint, in which find best vector on both disjoint areas
+    
+    Vector3D v = findValidVector();
+    double heuristic = averageCuspHeight(v);
+    
+    return findBestVectorUtil(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi()), B_AXIS_DISCRETE_POINTS / 4, A_AXIS_DISCRETE_POINTS / 4, heuristic).first;
 }
 
-pair<Vector3D, double> BuildMap::findBestVectorRecursive(int x, int y, int dx, int dy, double prevHeuristic) const {
+pair<Vector3D, double> BuildMap::findBestVectorUtil(int x, int y, int dx, int dy, double prevHeuristic) const {
     vector<pair<Vector3D, double>> options; //Vector3D with lowest heuristic in this vector is the best vector
     
-    double north = averageCuspHeight(Vector3D(bAxisValToTheta((x + dx) % B_AXIS_DISCRETE_POINTS), aAxisValToPhi(y)));
-    double south = averageCuspHeight(Vector3D(bAxisValToTheta((x - dx) % B_AXIS_DISCRETE_POINTS), aAxisValToPhi(y)));
-    double east = averageCuspHeight(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y + dy) % A_AXIS_DISCRETE_POINTS)));
-    double west = averageCuspHeight(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y - dy) % A_AXIS_DISCRETE_POINTS)));
+    double north = averageCuspHeight(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y + dy) % A_AXIS_DISCRETE_POINTS)));
+    double south = averageCuspHeight(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y - dy) % A_AXIS_DISCRETE_POINTS)));
+    double east = averageCuspHeight(Vector3D(bAxisValToTheta((x + dx) % B_AXIS_DISCRETE_POINTS), aAxisValToPhi(y)));
+    double west = averageCuspHeight(Vector3D(bAxisValToTheta((x - dx) % B_AXIS_DISCRETE_POINTS), aAxisValToPhi(y)));
     
     int newDx = ceil(static_cast<double>(dx) / 2.0);
     int newDy = ceil(static_cast<double>(dy) / 2.0);
@@ -255,20 +269,20 @@ pair<Vector3D, double> BuildMap::findBestVectorRecursive(int x, int y, int dx, i
         if ((dx == 1) && (dy == 1)) {
             options.push_back(pair<Vector3D, double>(Vector3D(bAxisValToTheta(x), aAxisValToPhi(y)), prevHeuristic));
         } else {
-            options.push_back(findBestVectorRecursive(x, y, newDx, newDy, prevHeuristic));
+            options.push_back(findBestVectorUtil(x, y, newDx, newDy, prevHeuristic));
         }
     } else {
         if (north < prevHeuristic) {
-            options.push_back(findBestVectorRecursive((x + newDx) % B_AXIS_DISCRETE_POINTS, y, newDx, newDy, north));
+            options.push_back(findBestVectorUtil((x + newDx) % B_AXIS_DISCRETE_POINTS, y, newDx, newDy, north));
         }
         if (south < prevHeuristic) {
-            options.push_back(findBestVectorRecursive((x - newDx) % B_AXIS_DISCRETE_POINTS, y, newDx, newDy, south));
+            options.push_back(findBestVectorUtil((x - newDx) % B_AXIS_DISCRETE_POINTS, y, newDx, newDy, south));
         }
         if (east < prevHeuristic) {
-            options.push_back(findBestVectorRecursive(x, (y + newDy) % A_AXIS_DISCRETE_POINTS, newDx, newDy, east));
+            options.push_back(findBestVectorUtil(x, (y + newDy) % A_AXIS_DISCRETE_POINTS, newDx, newDy, east));
         }
         if (west < prevHeuristic) {
-            options.push_back(findBestVectorRecursive(x, (y + newDy) % A_AXIS_DISCRETE_POINTS, newDx, newDy, west));
+            options.push_back(findBestVectorUtil(x, (y + newDy) % A_AXIS_DISCRETE_POINTS, newDx, newDy, west));
         }
     }
     
@@ -286,18 +300,6 @@ pair<Vector3D, double> BuildMap::findBestVectorRecursive(int x, int y, int dx, i
     return bestOption;
 }
 
-Vector3D BuildMap::findBestVector() const {
-    if (!m_solved) {
-        writeLog(WARNING, "BUILD MAP - finding best vector of unsolved build map");
-        return Vector3D(0, 0, 0);
-    }
-    
-    Vector3D v = findValidVector();
-    double heuristic = averageCuspHeight(v);
-    
-    return findBestVectorRecursive(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi()), B_AXIS_DISCRETE_POINTS / 2, A_AXIS_DISCRETE_POINTS / 2, heuristic).first;
-}
-
 double BuildMap::averageCuspHeight(const Vector3D & v) const {
     if (!m_solved) {
         writeLog(WARNING, "BUILD MAP - weighing vector of unsolved build map");
@@ -311,9 +313,9 @@ double BuildMap::averageCuspHeight(const Vector3D & v) const {
     for (vector<shared_ptr<Mesh::Face>>::const_iterator it = m_p_mesh->p_faces().begin(); it != m_p_mesh->p_faces().end(); it++) {
         shared_ptr<Mesh::Face> p_face = *it;
         
-        double weightToAdd = Vector3D::dotProduct(v, p_face->normal()) * p_face->area();
+        double weightToAdd = Vector3D::dotProduct(v, p_face->normal());
         weightToAdd /= (v.magnitude() * p_face->normal().magnitude());
-        weight += fabs(weightToAdd);
+        weight += fabs(weightToAdd) * p_face->area();
         
         totalFaceArea += p_face->area();
     }

@@ -44,8 +44,8 @@ namespace mapmqp {
         bool m_solved = false;
         bool m_phiZeroAvailable = true; //whether or not the point at phi = 0 is true
         
-        Vector3D findValidVectorRecursive(int xStart, int yStart, int width, int height) const;
-        std::pair<Vector3D, double> findBestVectorRecursive(int x, int y, int dx, int dy, double prevHeuristic) const;
+        Vector3D findValidVectorUtil(int xStart, int yStart, int width, int height) const;
+        std::pair<Vector3D, double> findBestVectorUtil(int x, int y, int dx, int dy, double prevHeuristic) const;
     };
 }
 

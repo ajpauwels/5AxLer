@@ -29,8 +29,10 @@
 #include <unordered_map>
 #include <string>
 #include <memory>
+#include <queue>
 #include "BuildMapToMATLAB.hpp"
 #include "Slicer.hpp"
+#include "DirectedGraph.hpp"
 //end debugging
 
 using namespace mapmqp;
@@ -40,16 +42,48 @@ int main(int argc, const char * argv[]) {
     // insert code here...
     printf("Hello, World!\n");
     
-    // #ifdef RUN_TESTS
-    //     //run tests
-    //     //mapmqp::writeLog(mapmqp::INFO, "running tests...");
-    //     int catch_argc = argc;
-    //     char ** catch_argvs;
-    //     char * catch_a = new char[argc];
-    //     catch_argvs = &catch_a;
-    //     catch_main(catch_argc, catch_argvs);
-    //     //return 0;
-    // #endif
+#ifdef RUN_TESTS
+    //run tests
+    mapmqp::writeLog(mapmqp::INFO, "running tests...");
+    int catch_argc = argc;
+    char ** catch_argvs;
+    char * catch_a = new char[argc];
+    catch_argvs = &catch_a;
+    catch_main(catch_argc, catch_argvs);
+    //return 0;
+#endif
+    
+    DirectedGraph<int> graph;
+    
+    int n0 = graph.addVertex(0);
+    int n1 = graph.addVertex(1);
+    int n2 = graph.addVertex(2);
+    int n3 = graph.addVertex(3);
+    int n4 = graph.addVertex(4);
+    int n5 = graph.addVertex(5);
+    
+    graph.addDirectedEdge(5, 2);
+    graph.addDirectedEdge(5, 0);
+    graph.addDirectedEdge(4, 0);
+    graph.addDirectedEdge(4, 1);
+    graph.addDirectedEdge(2, 3);
+    graph.addDirectedEdge(3, 1);
+    
+//    graph.addDirectedEdge(n2, n0);
+//    graph.addDirectedEdge(n2, n1);
+//    graph.addDirectedEdge(n0, n1);
+//    graph.addDirectedEdge(n1, n3);
+//    graph.addDirectedEdge(n1, n6);
+//    graph.addDirectedEdge(n6, n7);
+//    graph.addDirectedEdge(n4, n5);
+    
+    stack<int> q = graph.topologicalSort();
+    
+    while (!q.empty()) {
+        int i = q.top();
+        q.pop();
+        printf("%i\n", i);
+    }
     
     //     mapmqp::writeLog(mapmqp::INFO, "starting 5AxLer at time %s", mapmqp::Clock::wallTimeString().c_str());
     //     mapmqp::settingsDocument();
@@ -97,21 +131,21 @@ int main(int argc, const char * argv[]) {
     BuildMapToMATLAB::parseBuildMapToMATLAB("debug/buildmap-sphere.m", map, BuildMapToMATLAB::SPHERE, 25);
     BuildMapToMATLAB::parseBuildMapToMATLAB("debug/buildmap-sphere-smooth.m", map, BuildMapToMATLAB::SPHERE_SMOOTH, 25);
     
-    /*map.checkVector(mapmqp::Vector3D(mapmqp::Angle(0), mapmqp::Angle(0)));
+    map.checkVector(mapmqp::Vector3D(mapmqp::Angle(0), mapmqp::Angle(0)));
      
-     double originalArea = A_AXIS_RANGE * B_AXIS_RANGE;
+     double originalArea = A_AXIS_DISCRETE_POINTS * B_AXIS_DISCRETE_POINTS;
      printf("original area: %f\n", originalArea);
      
      double area = map.area();
      printf("area: %f\n", area);
-     printf("area difference: %f\n", area - originalArea);
+     printf("area difference: %f\n", originalArea - area);
      
      mapmqp::Vector3D validVector = map.findValidVector();
      printf("valid vector(theta:%f, phi:%f)\n", validVector.theta().val(), validVector.phi().val());
      
      //TODO check to make sure this value is correct
      mapmqp::Vector3D bestVector = map.findBestVector();
-     printf("best vector(theta:%f, phi:%f)\n", bestVector.theta().val(), bestVector.phi().val());*/
+     printf("best vector(theta:%f, phi:%f)\n", bestVector.theta().val(), bestVector.phi().val());
     
     return 0;
 }

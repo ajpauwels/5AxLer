@@ -8,7 +8,14 @@
 
 #include "Angle.hpp"
 
+#include <sstream>
+
+#include "Utility.hpp"
+
 using namespace mapmqp;
+using namespace std;
+
+double Angle::s_faultTolerance = 0.0;
 
 /**
  * Constructor builds an angle out of the given value,
@@ -82,4 +89,42 @@ void Angle::val(double val) {
     
     m_val = val;
     m_sinSet = m_cosSet = false;
+}
+
+bool Angle::equals(const Angle & angle, double faultTolerance) const {
+    return doubleEquals(m_val, angle.val(), faultTolerance);
+}
+
+Angle Angle::operator+(const Angle & angle) const {
+    return Angle(m_val + angle.m_val);
+}
+
+Angle Angle::operator-(const Angle & angle) const {
+    return Angle(m_val - angle.m_val);
+}
+
+Angle Angle::operator+(double angleVal) const {
+    return Angle(m_val + angleVal);
+}
+
+Angle Angle::operator-(double angleVal) const {
+    return Angle(m_val - angleVal);
+}
+
+bool Angle::operator==(const Angle & angle) const {
+    return equals(angle, s_faultTolerance);
+}
+
+bool Angle::operator!=(const Angle & angle) const {
+    return !equals(angle, s_faultTolerance);
+}
+
+std::string Angle::toString(bool degrees) const {
+    ostringstream stream;
+    if (degrees) {
+        stream << radiansToDegrees(m_val) << "°";
+    } else {
+        stream << m_val;
+    }
+    return stream.str();
 }

@@ -34,8 +34,20 @@ const vector<shared_ptr<Mesh::Face>> & Mesh::p_faces() const {
     return m_p_faces;
 }
 
-void Mesh::addVertex(shared_ptr<Mesh::Vertex> vertex) {
-    m_p_vertices.push_back(vertex);
+void Mesh::addVertex(shared_ptr<Mesh::Vertex> p_vertex) {
+    m_p_vertices.push_back(p_vertex);
+    m_vertexRoster.add(*p_vertex);
+}
+
+/**
+ * Adds a face to the vector of faces in the mesh
+ *
+ * @param face A pointer to the Mesh::Face to add
+ */
+void Mesh::addFace(shared_ptr<Mesh::Face> p_face) {
+    p_face->m_p_parent = shared_ptr<const Mesh>(this);
+    m_p_faces.push_back(p_face);
+    m_faceRoster.add(*p_face);
 }
 
 /**
@@ -55,22 +67,13 @@ void Mesh::transform(void (*transformFnc)(Vector3D & v)) {
         shared_ptr<Mesh::Face> p_face = *it;
         
         //take cross product of (v1 - v0) and (v2 - v0)
-        Vector3D normalUnnormalized = Vector3D::crossProduct(m_p_vertices[1]->vertex() - m_p_vertices[0]->vertex(), m_p_vertices[2]->vertex() - m_p_vertices[0]->vertex());
+        Vector3D normalUnnormalized = Vector3D::crossProduct(p_face->p_vertex(1)->vertex() - p_face->p_vertex(0)->vertex(), p_face->p_vertex(2)->vertex() - p_face->p_vertex(0)->vertex());
         //area is equal to half the magnitude of a cross product
         p_face->m_area = normalUnnormalized.magnitude() / 2;
         //normalize normal
         p_face->m_normal = normalUnnormalized;
         p_face->m_normal.normalize();
     }
-}
-
-/**
- * Adds a face to the vector of faces in the mesh
- *
- * @param face A pointer to the Mesh::Face to add
- */
-void Mesh::addFace(shared_ptr<Mesh::Face> face) {
-    m_p_faces.push_back(face);
 }
 
 //Mesh::Vertex class functions
@@ -195,14 +198,14 @@ string Mesh::Edge::toString() const {
  * @param v2 The second vertex, counter-clockwise from the first
  * @param v3 The third and final vertex
  */
-Mesh::Face::Face(shared_ptr<const Mesh::Vertex> v0, shared_ptr<const Mesh::Vertex> v1, shared_ptr<const Mesh::Vertex> v2) {
+Mesh::Face::Face(shared_ptr<const Mesh::Vertex> p_v0, shared_ptr<const Mesh::Vertex> p_v1, shared_ptr<const Mesh::Vertex> p_v2) {
     // Set the vertices array
-    m_p_vertices[0] = v0;
-    m_p_vertices[1] = v1;
-    m_p_vertices[2] = v2;
+    m_p_vertices[0] = p_v0;
+    m_p_vertices[1] = p_v1;
+    m_p_vertices[2] = p_v2;
     
     //take cross product of (v1 - v0) and (v2 - v0)
-    Vector3D normalUnnormalized = Vector3D::crossProduct(m_p_vertices[1]->vertex() - m_p_vertices[0]->vertex(), m_p_vertices[2]->vertex() - m_p_vertices[0]->vertex());
+    Vector3D normalUnnormalized = Vector3D::crossProduct(p_v1->vertex() - p_v0->vertex(), p_v2->vertex() - p_v0->vertex());
     //area is equal to half the magnitude of a cross product
     m_area = normalUnnormalized.magnitude() / 2;
     //normalize normal

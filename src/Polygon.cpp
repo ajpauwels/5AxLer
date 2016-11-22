@@ -22,13 +22,34 @@ uint64_t Polygon::s_mappedPointPrecision = 1000000;
 Polygon::Polygon(const vector<Vector3D> & points) :
 m_points(points) {
     if (points.size() < 3) {
-        writeLog(ERROR, "attempted to create polygon with only 2 points");
+        writeLog(ERROR, "attempted to create Polygon with only 2 points");
         //TODO throw exception
     }
     
-    //TODO first 3 points may be on same line, in which case plane normal cannot be determined by first 3 points
+    Vector3D p0, p1, p2;
+    
+    //find points to generate plane
+    bool planeValid = false;
+    p0 = points[0];
+    for (vector<Vector3D>::const_iterator it = points.begin() + 1; it != points.end(); it++) {
+        if (*it != p0) { //find point different than p0
+            p1 = *it;
+            for (vector<Vector3D>::const_iterator subIt = it + 1; subIt != points.end(); subIt++) {
+                if (Vector3D::crossProduct(p1 - p0, *subIt - p0) != 0) { //find point on different line than p0 and p1
+                    planeValid = true;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    if (!planeValid) {
+        writeLog(ERROR, "all points in Polygon lie on the same line");
+        //TODO throw exception
+    }
+    
     //set plane's normal
-    Vector3D planeNormal = Vector3D::crossProduct(points[1] - points[0], points[2] - points[0]); //TODO this is backwards?
+    Vector3D planeNormal = Vector3D::crossProduct(p1 - p0, p2 - p0);
     planeNormal.normalize();
     
     //find closest point on plane to origin
@@ -36,31 +57,28 @@ m_points(points) {
     
     m_plane = Plane(planeNormal, t);
     
-    //TODO TODO TODO these axes sholdn't be "arbitrary"!!!
-    //find arbitrary x and y axes of polygon plane such that dot(x, planeNormal) = dot(y, planeNormal) = 0
-    m_planeAxisX = m_points[1] - m_points[0]; //x axis can be any vector on plane
+    //find x and y axes of polygon plane such that dot(x, planeNormal) = dot(y, planeNormal) = 0
+    m_planeAxisX = Vector3D(planeNormal.phi() + M_PI_2, planeNormal.theta());
+    m_planeAxisY = Vector3D(planeNormal.phi() + M_PI_2, planeNormal.theta() + M_PI_2);
     m_planeAxisX.normalize();
-    m_planeAxisY = Vector3D::crossProduct(m_planeAxisX, planeNormal); //y axis will be any vector orthogonal to both x axis and planeNormal
     m_planeAxisY.normalize();
     
-#ifdef DEBUG_MODE
     if (!doubleEquals(Vector3D::dotProduct(planeNormal, m_planeAxisX), 0)) {
-        writeLog(ERROR, "dot product between plane normal of polygon and chosen x-axis = %f does not equal 0", fabs(Vector3D::dotProduct(planeNormal, m_planeAxisX)));
+        writeLog(ERROR, "dot product between plane normal of Polygon and chosen x-axis = %f does not equal 0", fabs(Vector3D::dotProduct(planeNormal, m_planeAxisX)));
     }
     if (!doubleEquals(Vector3D::dotProduct(planeNormal, m_planeAxisY), 0)) {
-        writeLog(ERROR, "dot product between plane normal of polygon and chosen y-axis = %f does not equal 0", fabs(Vector3D::dotProduct(planeNormal, m_planeAxisY)));
+        writeLog(ERROR, "dot product between plane normal of Polygon and chosen y-axis = %f does not equal 0", fabs(Vector3D::dotProduct(planeNormal, m_planeAxisY)));
     }
     if (!doubleEquals(Vector3D::dotProduct(m_planeAxisX, m_planeAxisY), 0)) {
-        writeLog(ERROR, "dot product between chosen x-axis and y-axis of polygon plane = %f does not equal 0", fabs(Vector3D::dotProduct(m_planeAxisX, m_planeAxisY)));
+        writeLog(ERROR, "dot product between chosen x-axis and y-axis of Polygon plane = %f does not equal 0", fabs(Vector3D::dotProduct(m_planeAxisX, m_planeAxisY)));
     }
-#endif
     
     //create clipper representation
     for (vector<Vector3D>::const_reverse_iterator rit = m_points.rbegin(); rit != m_points.rend(); rit++) {
         Vector3D mappedPoint = mapPointToXYPlane(*rit);
         
         if ((fabs(mappedPoint.x()) >= pow(2, 62) / s_mappedPointPrecision) || (fabs(mappedPoint.y()) >= pow(2, 62) / s_mappedPointPrecision)) {
-            writeLog(WARNING, "mapping point from polygon that excedes given range");
+            writeLog(WARNING, "mapping point from Polygon that excedes given range");
         }
         m_polygonXYPlane << ClipperLib::IntPoint((int)(mappedPoint.x() * s_mappedPointPrecision), (int)(mappedPoint.y() * s_mappedPointPrecision));
     }
@@ -87,6 +105,18 @@ Vector3D Polygon::mapPointToXYPlane(const Vector3D & point) const {
     double mappedX = Vector3D::dotProduct(m_planeAxisX, point - m_plane.origin());
     double mappedY = Vector3D::dotProduct(m_planeAxisY, point - m_plane.origin());
     return Vector3D(mappedX, mappedY, 0);
+}
+
+Vector3D Polygon::mapPointToPolygonPlane(const Vector3D & point) const {
+    if (point.z() != 0) {
+        writeLog(WARNING, "mapping point to Polygon plane that has a non-zero z value");
+    }
+    
+    Vector3D mappedX = m_planeAxisX;
+    mappedX.normalize(point.x());
+    Vector3D mappedY = m_planeAxisY;
+    mappedY.normalize(point.y());
+    return m_plane.origin() + mappedX + mappedY;
 }
 
 double Polygon::area() const {

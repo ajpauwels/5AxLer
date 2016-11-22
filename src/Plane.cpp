@@ -39,14 +39,14 @@ void Plane::origin(Vector3D origin) {
     m_origin = origin;
 }
 
-Plane::PLANE_POSITION Plane::pointOnPlane(const Vector3D & point) const {
+Plane::PLANE_POSITION Plane::pointOnPlane(const Vector3D & point, double faultTolerance) const {
     if (point == m_origin) {
         return ON;
     }
     
     double dotVal = Vector3D::dotProduct(point - m_origin, m_normal);
     
-    if (doubleEquals(dotVal, 0.0, s_faultTolerance)) {
+    if (doubleEquals(dotVal, 0.0, faultTolerance)) {
         return ON;
     } else if (dotVal > 0) {
         return ABOVE;

@@ -44,11 +44,11 @@ namespace mapmqp {
 
 		        int hash = 17;
 		        hash = hash * 31 + v3hasher(p_me->p_vertex(0)->vertex());
-		        hash = hash * 31 + v3hasher(p_me->p_vertex(0)->vertex());
+		        hash = hash * 31 + v3hasher(p_me->p_vertex(0)->vertex()); //TODO should this be accessing the second vertex instead?
 		        return std::hash<int>()(hash);
 		    }
 		};
-
+        
 		struct MeshEdgePtrEquality {
 		    bool operator()(const std::shared_ptr<Mesh::Edge> & p_edge1, const std::shared_ptr<Mesh::Edge> & p_edge2) const {
 		        return *p_edge1 == *p_edge2;

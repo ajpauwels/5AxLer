@@ -31,20 +31,20 @@ bool BuildMapToMATLAB::parseBuildMapToMATLAB(string filePath, const BuildMap & b
         for (int y = 0; y <= A_AXIS_DISCRETE_POINTS; y += precision) {
             for (int x = 0; x <= B_AXIS_DISCRETE_POINTS; x += precision) {
                 Vector3D v = BuildMap::mapToVector(x, y);
-                double weight = buildMap.checkVector(v) ? buildMap.averageCuspHeight(v) : -1;
+                bool valid = buildMap.checkVector(v);
+                double weight = valid ? buildMap.averageCuspHeight(v) : 0;
                 
                 if (type == PLANE) {
                     xStr << x << " ";
                     yStr << y << " ";
-                    zStr << (int)weight << " ";
+                    zStr << (valid ? weight : -1) << " ";
                 } else if (type == SPHERE) {
-                    weight = fmax(weight, 0);
-                    v.normalize(weight);
+                    v.normalize(valid ? (weight + 1) : 0);
                     xStr << v.x() << " ";
                     yStr << v.y() << " ";
                     zStr << v.z() << " ";
                 } else if (type == SPHERE_SMOOTH) {
-                    weight = (weight > 0) ? 1 : 0;
+                    weight = valid ? 1 : 0;
                     v.normalize(weight);
                     xStr << v.x() << " ";
                     yStr << v.y() << " ";

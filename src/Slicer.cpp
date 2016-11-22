@@ -16,7 +16,7 @@ using namespace std;
 Slicer::Slicer(std::shared_ptr<const Mesh> p_mesh) :
 m_p_mesh(p_mesh) { }
 
-Slice Slicer::slice(const Plane & plane) const {
+Slicer::Slice Slicer::slice(const Plane & plane) const {
     //TODO is this a good way to do this?
     vector<shared_ptr<const Mesh::Face>> p_faces;
     for (vector<shared_ptr<Mesh::Face>>::const_iterator it = m_p_mesh->p_faces().begin(); it != m_p_mesh->p_faces().end(); it++) {
@@ -35,44 +35,27 @@ Slice Slicer::slice(const Plane & plane) const {
  * @return A pair containing the Slice object as its first element, and a vector of Mesh::Face
  *         pointers aligned with that slice as the second object
  */
-pair<Slice, vector<shared_ptr<const Mesh::Face>>> Slicer::slice(const Plane & plane, const vector<shared_ptr<const Mesh::Face>> & p_facesSearchSpace) const {
+pair<Slicer::Slice, vector<shared_ptr<const Mesh::Face>>> Slicer::slice(const Plane & plane, const vector<shared_ptr<const Mesh::Face>> & p_facesSearchSpace) const {
     // Create the return slice with the plane it's on
-    Slice slice(plane);
+    Slice slice(plane, vector<shared_ptr<const Island>>());
 
     // Our vector of Mesh::Face objects located on the slice
     vector<shared_ptr<const Mesh::Face>> p_intersectingFaces;
     
-    /**
-     * Hashes a Mesh::Face pointer. Note that this function hashes the
-     * pointer, not the actual values of the vertices in the Mesh::Face.
-     */
-    struct MeshFaceHash {
-        size_t operator()(const shared_ptr<const Mesh::Face> & p_meshFace) const {
-            return hash<shared_ptr<const Mesh::Face>>()(p_meshFace);
-        }
-    };
-    
-    // Stores the vertices that have already been evaluated by mapping its three vertices to a reference to the face
-    unordered_map<shared_ptr<const Mesh::Face>, shared_ptr<const Mesh::Face>, MeshFaceHash> mapped_p_checkedFaces;
-    
     // List of islands pre-ordering
     vector<shared_ptr<Island>> p_islands;
-
     // List of hole polygons and corresponding Mesh::Faces
     vector<shared_ptr<Island>> p_holes;
     
+    // Stores the vertices that have already been evaluated by mapping its three vertices to a reference to the face
+    Searchable<Mesh::Face>::Roster checkedFacesRoster;
     // Iterate through all faces in the search space
     for (vector<shared_ptr<const Mesh::Face>>::const_iterator it = p_facesSearchSpace.begin(); it != p_facesSearchSpace.end(); it++) {
         // Grab the actual Mesh::Face pointer from the iterator
         shared_ptr<const Mesh::Face> p_face = *it;
 
         // Get some information about the face in relation to the slice
-        bool alreadyMapped;
-        if (mapped_p_checkedFaces.size() > 0) {
-            alreadyMapped = mapped_p_checkedFaces.find(p_face) != mapped_p_checkedFaces.end();
-        } else {
-            alreadyMapped = false;
-        }
+        bool alreadyMapped = checkedFacesRoster.contains(*p_face);
         bool intersectsPlane = p_face->intersectsPlane(plane);
         bool liesOnPlane = p_face->liesOnPlane(plane);
 
@@ -89,7 +72,7 @@ pair<Slice, vector<shared_ptr<const Mesh::Face>>> Slicer::slice(const Plane & pl
             
             do {
                 //add ptr to Mesh::Face to list of checked faces
-                mapped_p_checkedFaces.emplace(p_currentFace, p_currentFace);
+                checkedFacesRoster.add(*p_currentFace);
                 
                 //add ptr to Mesh::Face to hashtable of intersection faces
                 p_intersectingFaces.push_back(p_currentFace);
@@ -151,7 +134,7 @@ pair<Slice, vector<shared_ptr<const Mesh::Face>>> Slicer::slice(const Plane & pl
             }
             
             if (!p_parentHole) { //no parent hole means island is top level island
-                slice.addIsland(*islandIt);
+                slice.p_islands.push_back(*islandIt);
             }
         }
         
@@ -184,7 +167,7 @@ pair<Slice, vector<shared_ptr<const Mesh::Face>>> Slicer::slice(const Plane & pl
         
     } else { // if no holes exist, all islands are disjoint
         for (vector<shared_ptr<Island>>::iterator it = p_islands.begin(); it != p_islands.end(); it++) {
-            slice.addIsland(*it);
+            slice.p_islands.push_back(*it);
         }
     }
     return pair<Slice, vector<shared_ptr<const Mesh::Face>>>(slice, p_intersectingFaces);
