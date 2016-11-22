@@ -15,7 +15,7 @@
 using namespace mapmqp;
 using namespace std;
 
-bool BuildMapToMATLAB::parseBuildMapToMATLAB(string filePath, const BuildMap & buildMap, OutputType type, int precision) {
+bool BuildMapToMATLAB::parse(string filePath, const BuildMap & buildMap, OutputType type, int precision) {
     double oldPrecision = precision;
     precision = fmax(1, fmin(precision, fmin(A_AXIS_DISCRETE_POINTS, B_AXIS_DISCRETE_POINTS)));
     

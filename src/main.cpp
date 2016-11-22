@@ -69,13 +69,13 @@ int main(int argc, const char * argv[]) {
     graph.addDirectedEdge(2, 3);
     graph.addDirectedEdge(3, 1);
     
-//    graph.addDirectedEdge(n2, n0);
-//    graph.addDirectedEdge(n2, n1);
-//    graph.addDirectedEdge(n0, n1);
-//    graph.addDirectedEdge(n1, n3);
-//    graph.addDirectedEdge(n1, n6);
-//    graph.addDirectedEdge(n6, n7);
-//    graph.addDirectedEdge(n4, n5);
+    //    graph.addDirectedEdge(n2, n0);
+    //    graph.addDirectedEdge(n2, n1);
+    //    graph.addDirectedEdge(n0, n1);
+    //    graph.addDirectedEdge(n1, n3);
+    //    graph.addDirectedEdge(n1, n6);
+    //    graph.addDirectedEdge(n6, n7);
+    //    graph.addDirectedEdge(n4, n5);
     
     stack<int> q = graph.topologicalSort();
     
@@ -127,25 +127,25 @@ int main(int argc, const char * argv[]) {
     
     mapmqp::BuildMap map(p_mesh);
     map.solve();
-    BuildMapToMATLAB::parseBuildMapToMATLAB("debug/buildmap-plane.m", map, BuildMapToMATLAB::PLANE, 25);
-    BuildMapToMATLAB::parseBuildMapToMATLAB("debug/buildmap-sphere.m", map, BuildMapToMATLAB::SPHERE, 25);
-    BuildMapToMATLAB::parseBuildMapToMATLAB("debug/buildmap-sphere-smooth.m", map, BuildMapToMATLAB::SPHERE_SMOOTH, 25);
+    BuildMapToMATLAB::parse("debug/buildmap-plane.m", map, BuildMapToMATLAB::PLANE, 25);
+    BuildMapToMATLAB::parse("debug/buildmap-sphere.m", map, BuildMapToMATLAB::SPHERE, 25);
+    BuildMapToMATLAB::parse("debug/buildmap-sphere-smooth.m", map, BuildMapToMATLAB::SPHERE_SMOOTH, 25);
     
     map.checkVector(mapmqp::Vector3D(mapmqp::Angle(0), mapmqp::Angle(0)));
-     
-     double originalArea = A_AXIS_DISCRETE_POINTS * B_AXIS_DISCRETE_POINTS;
-     printf("original area: %f\n", originalArea);
-     
-     double area = map.area();
-     printf("area: %f\n", area);
-     printf("area difference: %f\n", originalArea - area);
-     
-     mapmqp::Vector3D validVector = map.findValidVector();
-     printf("valid vector(theta:%f, phi:%f)\n", validVector.theta().val(), validVector.phi().val());
-     
-     //TODO check to make sure this value is correct
-     mapmqp::Vector3D bestVector = map.findBestVector();
-     printf("best vector(theta:%f, phi:%f)\n", bestVector.theta().val(), bestVector.phi().val());
+    
+    double originalArea = A_AXIS_DISCRETE_POINTS * B_AXIS_DISCRETE_POINTS;
+    printf("original area: %f\n", originalArea);
+    
+    double area = map.area();
+    printf("area: %f\n", area);
+    printf("area difference: %f\n", originalArea - area);
+    
+    mapmqp::Vector3D validVector = map.findValidVector();
+    printf("valid vector(theta:%f, phi:%f)\n", validVector.theta().val(), validVector.phi().val());
+    
+    //TODO check to make sure this value is correct
+    mapmqp::Vector3D bestVector = map.findBestVector();
+    printf("best vector(theta:%f, phi:%f)\n", bestVector.theta().val(), bestVector.phi().val());
     
     return 0;
 }
