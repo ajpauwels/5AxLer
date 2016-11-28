@@ -73,6 +73,7 @@ pair<Slice, vector<shared_ptr<const MeshFace>>> Slicer::slice(const Plane & plan
         } else {
             alreadyMapped = false;
         }
+
         bool intersectsPlane = p_face->intersectsPlane(plane);
         bool liesOnPlane = p_face->liesOnPlane(plane);
 

@@ -11,8 +11,15 @@
 using namespace mapmqp;
 using namespace std;
 
-VolumeDecomposer::VolumeDecomposer(shared_ptr<Mesh> p_mesh) : m_p_mesh(p_mesh) {}
+VolumeDecomposer::VolumeDecomposer() {}
 
-// vector<shared_ptr<Mesh>> VolumeDecomposer::run() {
-// 	return
-// }
+vector<shared_ptr<Mesh>> VolumeDecomposer::run(shared_ptr<Mesh> p_mesh, Plane orientation) {
+	Slicer slicer = new Slicer(p_mesh);
+
+	for (int i = 0; i < 1000; ++i) {
+		Plane firstPlane = new Plane(orientation, i * SLICE_THICKNESS);
+		Plane secondPlane = new Plane(orientation, (i + 1) * SLICE_THICKNESS);
+		Slice comparisonSlice = slicer.slice(firstPlane);
+		Slice currSlice = slicer.slice(secondPlane);
+	}
+}
