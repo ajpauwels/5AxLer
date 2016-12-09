@@ -63,6 +63,7 @@ void Mesh::transform(void (*transformFnc)(Vector3D & v)) {
         transformFnc(p_vertex->m_vertex);
     }
     
+    //recompute face normal and areas
     for (vector<shared_ptr<Mesh::Face>>::iterator it = m_p_faces.begin(); it != m_p_faces.end(); it++) {
         shared_ptr<Mesh::Face> p_face = *it;
         

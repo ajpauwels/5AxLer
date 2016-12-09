@@ -17,9 +17,9 @@ namespace mapmqp {
     class Plane {
     public:
         enum PLANE_POSITION {
-            ON,
-            ABOVE,
-            BELOW
+            BELOW = -1,
+            ON = 0,
+            ABOVE = 1
         };
         
         Plane(const Vector3D & normal = Vector3D(0, 0, 1), double scalar = 0.0); //normal vector set as default xy plane so plane will still have a normal when initialized with default value

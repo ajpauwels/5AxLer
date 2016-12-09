@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <string>
 
-#include "Searchable.hpp"
+#include "Identifier.hpp"
 #include "Vector3D.hpp"
 #include "Plane.hpp"
 #include "Polygon.hpp"
@@ -41,10 +41,10 @@ namespace mapmqp {
         
     private:
         std::vector<std::shared_ptr<Vertex>> m_p_vertices;
-        Searchable<Vertex>::Roster m_vertexRoster;
+        Identifier<Vertex>::Roster m_vertexRoster;
         
         std::vector<std::shared_ptr<Face>> m_p_faces;
-        Searchable<Face>::Roster m_faceRoster;
+        Identifier<Face>::Roster m_faceRoster;
         
         std::vector<std::shared_ptr<Vertex>> m_p_lowestVertices;
         
@@ -53,7 +53,7 @@ namespace mapmqp {
         
         // Mesh::Vertex class declaration
         
-        class Vertex : public Searchable<Vertex> {
+        class Vertex : public Identifier<Vertex> {
             friend class Mesh;
         public:
             Vertex(const Vector3D & vertex);
@@ -74,7 +74,7 @@ namespace mapmqp {
         
         // Mesh::Edge class declaration
         
-        class Edge : public Searchable<Edge> {
+        class Edge : public Identifier<Edge> {
             friend class Mesh;
         public:
             Edge(std::shared_ptr<const Vertex> p_vertex1, std::shared_ptr<const Vertex> p_vertex2);
@@ -98,7 +98,7 @@ namespace mapmqp {
         
         //Mesh::Face declaration
         
-        class Face : public Searchable<Face> {
+        class Face : public Identifier<Face> {
             friend class Mesh;
         public:
             Face(std::shared_ptr<const Vertex> p_vertex1, std::shared_ptr<const Vertex> p_vertex2, std::shared_ptr<const Vertex> p_vertex3); //TODO add normal checking

@@ -38,7 +38,7 @@ Slicer::Slice Slicer::slice(const Plane & plane) const {
 pair<Slicer::Slice, vector<shared_ptr<const Mesh::Face>>> Slicer::slice(const Plane & plane, const vector<shared_ptr<const Mesh::Face>> & p_facesSearchSpace) const {
     // Create the return slice with the plane it's on
     Slice slice(plane, vector<shared_ptr<const Island>>());
-
+    
     // Our vector of Mesh::Face objects located on the slice
     vector<shared_ptr<const Mesh::Face>> p_intersectingFaces;
     
@@ -48,17 +48,17 @@ pair<Slicer::Slice, vector<shared_ptr<const Mesh::Face>>> Slicer::slice(const Pl
     vector<shared_ptr<Island>> p_holes;
     
     // Stores the vertices that have already been evaluated by mapping its three vertices to a reference to the face
-    Searchable<Mesh::Face>::Roster checkedFacesRoster;
+    Identifier<Mesh::Face>::Roster checkedFacesRoster;
     // Iterate through all faces in the search space
     for (vector<shared_ptr<const Mesh::Face>>::const_iterator it = p_facesSearchSpace.begin(); it != p_facesSearchSpace.end(); it++) {
         // Grab the actual Mesh::Face pointer from the iterator
         shared_ptr<const Mesh::Face> p_face = *it;
-
+        
         // Get some information about the face in relation to the slice
         bool alreadyMapped = checkedFacesRoster.contains(*p_face);
         bool intersectsPlane = p_face->intersectsPlane(plane);
         bool liesOnPlane = p_face->liesOnPlane(plane);
-
+        
         writeLog(INFO, "slicing Mesh::Face: %s\n", p_face->toString().c_str());
         
         // Check we've never seen this face, it intersects the plane, and it doesn't lie on the plane
@@ -93,7 +93,7 @@ pair<Slicer::Slice, vector<shared_ptr<const Mesh::Face>>> Slicer::slice(const Pl
                 }
                 
                 if (!p_currentFace) {
-                    writeLog(ERROR, "connected face to face being sliced is nullptr");
+                    writeLog(ERROR, "connected face to face being sliced is null");
                     break;
                 }
             } while (p_currentFace != p_startFace);
@@ -171,4 +171,68 @@ pair<Slicer::Slice, vector<shared_ptr<const Mesh::Face>>> Slicer::slice(const Pl
         }
     }
     return pair<Slice, vector<shared_ptr<const Mesh::Face>>>(slice, p_intersectingFaces);
+}
+
+/**
+ * Takes in all faces that intersect a plane and returns all faces that intersect the next plane
+ *
+ * @param p_facesSearchSpace all faces that intersect the previous plane
+ * @param originalPlane the plane of the previous slice
+ * @param nextPlane the plane of the next slice
+ *
+ * @return all faces that intersect the next slice plane
+ */
+std::vector<std::shared_ptr<const Mesh::Face>> Slicer::expandSearchSpace(std::vector<std::shared_ptr<const Mesh::Face>> & p_facesSearchSpace, const Plane & originalPlane, const Plane & nextPlane) const {
+    if (originalPlane.pointOnPlane(nextPlane.origin()) != Plane::ABOVE) {
+        writeLog(ERROR, "attempting to expand search space to slice not above previous slice");
+        return p_facesSearchSpace;
+    }
+    
+    std::vector<std::shared_ptr<const Mesh::Face>> p_facesSearchSpaceExpanded;
+    
+    Identifier<Mesh::Face>::Roster faceRoster; //used to check if a face has been searched
+    for (vector<shared_ptr<const Mesh::Face>>::iterator it = p_facesSearchSpace.begin(); it != p_facesSearchSpace.end(); it++) {
+        if (!faceRoster.contains(**it)) {
+            queue<shared_ptr<const Mesh::Face>> queue;
+            queue.push(*it);
+            while (queue.size() > 0) {
+                //take first element in queue
+                shared_ptr<const Mesh::Face> p_face = queue.front();
+                queue.pop();
+                
+                faceRoster.add(*p_face); //mark face as searched
+                
+                bool intersectsNextPlane = false; //whether of not the face intersects the next plane
+                bool entirelyAboveNextPlane = true; //whether or not face lies entirely on/above next plane
+                
+                Plane::PLANE_POSITION positions[3]; //calculate plane position of each point
+                for (unsigned int i = 0; i < 3; i++) {
+                    positions[i] = originalPlane.pointOnPlane(p_face->p_vertex(i)->vertex());
+                    
+                    Plane::PLANE_POSITION nextPlanePos = nextPlane.pointOnPlane(p_face->p_vertex(i)->vertex());
+                    intersectsNextPlane |= (nextPlanePos != Plane::BELOW);
+                    entirelyAboveNextPlane &= (nextPlanePos != Plane::BELOW);
+                }
+                
+                if (intersectsNextPlane) {
+                    p_facesSearchSpaceExpanded.push_back(p_face);
+                }
+                
+                if (!entirelyAboveNextPlane) {
+                    for (unsigned int i = 0; i < 3; i++) { //check each edge of face
+                        Vector3D pFirst = positions[i];
+                        Vector3D pSecond = positions[i + 1];
+                        if ((originalPlane.pointOnPlane(pFirst) == Plane::ABOVE) || (originalPlane.pointOnPlane(pSecond) == Plane::ABOVE)) { //if edge contains point above plane, add neighboring face of edge to queue
+                            shared_ptr<const Mesh::Face> p_neighbor = p_face->p_connectedFace(i);
+                            if (!faceRoster.contains(*p_neighbor)) { //only add face if it has not been looked at yet
+                                queue.push(p_neighbor);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return p_facesSearchSpaceExpanded;
 }

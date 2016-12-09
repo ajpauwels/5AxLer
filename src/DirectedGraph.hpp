@@ -22,18 +22,20 @@ namespace mapmqp {
         DirectedGraph();
         
         const std::vector<T> & elements() const;
-        const std::vector<int> & adjacentyList(unsigned int index) const;
+        const std::vector<int> & childList(unsigned int index) const;
+        const std::vector<int> & parentList(unsigned int index) const;
         
         //returns index of element in graph
         int addVertex(T element);
-        void addDirectedEdge(int sourceIndex, int destIndex);
+        void addDirectedEdge(unsigned int sourceIndex, unsigned int destIndex);
         
         std::vector<std::vector<int>> findCycles() const;
         std::stack<int> topologicalSort() const; //if cycles exist, this will return an topological sort although invalid
         
-    private:
+    protected:
         std::vector<T> m_elements;
-        std::vector<std::vector<int>> m_adjacencyLists;
+        std::vector<std::vector<int>> m_childLists;
+        std::vector<std::vector<int>> m_parentLists;
         
         void findCyclesUtil(int index, int & discCount, std::vector<int> & discs, std::vector<int> & lows, std::stack<int> & stack, std::vector<bool> & inStack, std::vector<std::vector<int>> & cycles) const;
         void topologicalSortUtil(int index, std::vector<bool> & visited, std::stack<int> & sortedGraph) const;
@@ -50,32 +52,45 @@ namespace mapmqp {
     }
     
     template<typename T>
-    const std::vector<int> & DirectedGraph<T>::adjacentyList(unsigned int index) const {
-        if (index >= m_adjacencyLists.size()) {
+    const std::vector<int> & DirectedGraph<T>::childList(unsigned int index) const {
+        if (index >= m_childLists.size()) {
             writeLog(WARNING, "attempted to access adjacency list of index out of range");
             static std::vector<int> emptyVector;
             return emptyVector;
         }
         
-        return m_adjacencyLists[index];
+        return m_childLists[index];
+    }
+    
+    template<typename T>
+    const std::vector<int> & DirectedGraph<T>::parentList(unsigned int index) const {
+        if (index >= m_parentLists.size()) {
+            writeLog(WARNING, "attempted to access adjacency list of index out of range");
+            static std::vector<int> emptyVector;
+            return emptyVector;
+        }
+        
+        return m_parentLists[index];
     }
     
     template<typename T>
     int DirectedGraph<T>::addVertex(T element) {
         int index = m_elements.size();
         m_elements.push_back(element);
-        m_adjacencyLists.resize(index + 1);
+        m_childLists.resize(index + 1);
+        m_parentLists.resize(index + 1);
         return index;
     }
     
     template<typename T>
-    void DirectedGraph<T>::addDirectedEdge(int sourceIndex, int destIndex) {
-        if ((sourceIndex >= m_adjacencyLists.size()) || (destIndex >= m_adjacencyLists.size())) {
+    void DirectedGraph<T>::addDirectedEdge(unsigned int sourceIndex, unsigned int destIndex) {
+        if ((sourceIndex >= m_elements.size()) || (destIndex >= m_elements.size())) {
             writeLog(ERROR, "attempted to add edge between vertices not in range");
             return;
         }
         
-        m_adjacencyLists[sourceIndex].push_back(destIndex);
+        m_childLists[sourceIndex].push_back(destIndex);
+        m_parentLists[destIndex].push_back(sourceIndex);
     }
     
     template<typename T>
@@ -106,7 +121,7 @@ namespace mapmqp {
         stack.push(index);
         inStack[index] = true;
         
-        for (std::vector<int>::const_iterator it = m_adjacencyLists[index].begin(); it != m_adjacencyLists[index].end(); it++) {
+        for (std::vector<int>::const_iterator it = m_childLists[index].begin(); it != m_childLists[index].end(); it++) {
             int otherIndex = *it;
             
             if (discs[otherIndex] == -1) {
@@ -156,7 +171,7 @@ namespace mapmqp {
     void DirectedGraph<T>::topologicalSortUtil(int index, std::vector<bool> & visited, std::stack<int> & sortedGraph) const {
         visited[index] = true;
         
-        for (std::vector<int>::const_iterator it = m_adjacencyLists[index].begin(); it != m_adjacencyLists[index].end(); it++) {
+        for (std::vector<int>::const_iterator it = m_childLists[index].begin(); it != m_childLists[index].end(); it++) {
             if (!visited[*it]) {
                 topologicalSortUtil(*it, visited, sortedGraph);
             }
