@@ -191,7 +191,7 @@ namespace mapmqp {
                 //move json string to buffer and parse into document
                 std::string jsonStr = strStream.str();
                 int jsonStrLen = strlen(jsonStr.c_str());
-                char * buffer = new char[jsonStrLen - 1];
+                char * buffer = new char[jsonStrLen - 1]; //TODO does this need to be deleted?
                 std::memcpy(buffer, jsonStr.c_str(), jsonStrLen - 1);
                 if (jsonDoc->ParseInsitu(buffer).HasParseError()) {
                     writeLog(ERROR, "error parsing settings json file");

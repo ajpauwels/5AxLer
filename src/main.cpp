@@ -49,7 +49,7 @@ int main(int argc, const char * argv[]) {
     char ** catch_argvs;
     char * catch_a = new char[argc];
     catch_argvs = &catch_a;
-    catch_main(catch_argc, catch_argvs);
+    //catch_main(catch_argc, catch_argvs);
     //return 0;
 #endif
     
@@ -61,28 +61,30 @@ int main(int argc, const char * argv[]) {
     int n3 = graph.addVertex(3);
     int n4 = graph.addVertex(4);
     int n5 = graph.addVertex(5);
+    int n6 = graph.addVertex(6);
+    int n7 = graph.addVertex(7);
+    int n8 = graph.addVertex(8);
     
-    graph.addDirectedEdge(5, 2);
-    graph.addDirectedEdge(5, 0);
-    graph.addDirectedEdge(4, 0);
-    graph.addDirectedEdge(4, 1);
+    graph.addDirectedEdge(0, 1);
+    graph.addDirectedEdge(1, 2);
     graph.addDirectedEdge(2, 3);
-    graph.addDirectedEdge(3, 1);
+    graph.addDirectedEdge(3, 4);
+    graph.addDirectedEdge(4, 5);
+    graph.addDirectedEdge(5, 1);
+    graph.addDirectedEdge(2, 6);
+    graph.addDirectedEdge(6, 7);
+    graph.addDirectedEdge(7, 3);
+    graph.addDirectedEdge(7, 8);
+    graph.addDirectedEdge(8, 2);
     
-    //    graph.addDirectedEdge(n2, n0);
-    //    graph.addDirectedEdge(n2, n1);
-    //    graph.addDirectedEdge(n0, n1);
-    //    graph.addDirectedEdge(n1, n3);
-    //    graph.addDirectedEdge(n1, n6);
-    //    graph.addDirectedEdge(n6, n7);
-    //    graph.addDirectedEdge(n4, n5);
+    vector<vector<int>> q = graph.findCycles();
     
-    stack<int> q = graph.topologicalSort();
-    
-    while (!q.empty()) {
-        int i = q.top();
-        q.pop();
-        printf("%i\n", i);
+    for (auto & x : q) {
+        printf("cycle: ");
+        for (auto & y : x) {
+            printf("%i", y);
+        }
+        printf("\n");
     }
     
     //     mapmqp::writeLog(mapmqp::INFO, "starting 5AxLer at time %s", mapmqp::Clock::wallTimeString().c_str());

@@ -1,23 +1,23 @@
 //
-//  Searchable.hpp
+//  Identifier.hpp
 //  5AxLer
 //
 //  Created by Ethan Coeytaux on 11/21/16.
 //  Copyright © 2016 MAP MQP. All rights reserved.
 //
 
-#ifndef Searchable_hpp
-#define Searchable_hpp
+#ifndef Identifier_hpp
+#define Identifier_hpp
 
 #include "Utility.hpp"
 
 namespace mapmqp {
     template<typename T>
-    class Searchable {
+    class Identifier {
     public:
         typedef std::pair<uint64_t, uint16_t> ID;
         
-        Searchable() {
+        Identifier() {
             static uint64_t power = 1; //represents power of 2
             static uint16_t index = 0; //index of vector to check power of 2
             
@@ -41,15 +41,27 @@ namespace mapmqp {
         public:
             Roster() { }
             
-            void add(const T & element) {
+            void add(const Identifier<T> & element) {
                 ID id = element.id();
                 if (rosters.size() <= id.second) {
                     rosters.resize(id.second + 1);
                 }
+                if (rosters[id.second] & id.first) {
+                    writeLog(WARNING, "adding element to Roster that already contains element");
+                }
                 rosters[id.second] |= id.first;
             }
             
-            bool contains(const T & element) const {
+            bool remove(const Identifier<T> & element) {
+                ID id = element.id();
+                if ((rosters.size() <= id.second) || !(rosters[id.second] & id.first)) {
+                    writeLog(WARNING, "removing element to Roster that does not contain element");
+                } else {
+                    rosters[id.second] &= ~id.first;
+                }
+            }
+            
+            bool contains(const Identifier<T> & element) const {
                 ID id = element.id();
                 return (rosters.size() > id.second) ? (rosters[id.second] & id.first) : false;
             }
@@ -63,4 +75,4 @@ namespace mapmqp {
     };
 }
 
-#endif /* Searchable_hpp */
+#endif /* Identifier_hpp */

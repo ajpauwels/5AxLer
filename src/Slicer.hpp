@@ -36,20 +36,23 @@ namespace mapmqp {
         // Constructor
         Slicer(std::shared_ptr<const Mesh> p_mesh);
 
-	   // Slice iterator
+        // Slice iterator
         Slice slice(const Plane & plane) const;
-
-	private:
+        
+    private:
         //functions
         
         //slice plane with limited search space
         //returns slice and vector of ptrs to Mesh::Face that contained slice
         std::pair<Slice, std::vector<std::shared_ptr<const Mesh::Face>>> slice(const Plane & plane, const std::vector<std::shared_ptr<const Mesh::Face>> & p_facesSearchSpace) const;
         
+        //TODO this may not be the best way to pass data to this function
+        std::vector<std::shared_ptr<const Mesh::Face>> expandSearchSpace(std::vector<std::shared_ptr<const Mesh::Face>> & p_facesSearchSpace, const Plane & originalPlane, const Plane & nextPlan) const;
+        
         //variables
         
         std::shared_ptr<const Mesh> m_p_mesh;
-	};
+    };
 }
 
 #endif /* Slicer_hpp */
