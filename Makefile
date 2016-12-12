@@ -18,8 +18,8 @@ TEST_DIR = ./tests/
 all: $(TARGET)
 
 # To make the final program
-$(TARGET): $(SRC_DIR)$(ENTRY) Mesh.o Vector3D.o Angle.o ProcessSTL.o Clock.o Plane.o Clipper.o Slicer.o Slice.o Island.o Polygon.o
-	$(CC) $(CFLAGS) $(BUILD_DIR)Island.o $(BUILD_DIR)Polygon.o $(BUILD_DIR)Slicer.o $(BUILD_DIR)Slice.o $(BUILD_DIR)Clipper.o $(BUILD_DIR)Plane.o $(BUILD_DIR)Mesh.o $(BUILD_DIR)Vector3D.o $(BUILD_DIR)Angle.o $(BUILD_DIR)ProcessSTL.o $(BUILD_DIR)Clock.o -o $(BUILD_DIR)$(TARGET) $(SRC_DIR)$(ENTRY)
+$(TARGET): $(SRC_DIR)$(ENTRY) Mesh.o Vector3D.o Angle.o ProcessSTL.o Clock.o Plane.o Clipper.o Slicer.o Island.o Polygon.o BuildMap.o BuildMapToMATLAB.o
+	$(CC) $(CFLAGS) $(BUILD_DIR)Island.o $(BUILD_DIR)Polygon.o $(BUILD_DIR)Slicer.o $(BUILD_DIR)Clipper.o $(BUILD_DIR)Plane.o $(BUILD_DIR)Mesh.o $(BUILD_DIR)Vector3D.o $(BUILD_DIR)Angle.o $(BUILD_DIR)ProcessSTL.o $(BUILD_DIR)Clock.o $(BUILD_DIR)BuildMap.o $(BUILD_DIR)BuildMapToMATLAB.o -o $(BUILD_DIR)$(TARGET) $(SRC_DIR)$(ENTRY)
 
 # Build the Mesh object file
 Mesh.o: $(SRC_DIR)Mesh.cpp $(SRC_DIR)Mesh.hpp $(SRC_DIR)Utility.hpp $(SRC_DIR)Vector3D.hpp
@@ -41,6 +41,10 @@ Clock.o: $(SRC_DIR)Clock.cpp $(SRC_DIR)Clock.hpp
 BuildMap.o: $(SRC_DIR)BuildMap.cpp $(SRC_DIR)BuildMap.hpp $(SRC_DIR)Utility.hpp $(SRC_DIR)Vector3D.hpp $(SRC_DIR)Angle.hpp $(LIB_DIR)clipper/clipper.hpp
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)BuildMap.o $(SRC_DIR)BuildMap.cpp
 
+# Build the BuildMapToMATLAB object file
+BuildMapToMATLAB.o: $(SRC_DIR)BuildMap.cpp $(SRC_DIR)BuildMap.hpp $(SRC_DIR)Utility.hpp
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)BuildMapToMATLAB.o $(SRC_DIR)BuildMapToMATLAB.cpp
+
 # Build the ProcessSTL object file
 ProcessSTL.o: $(SRC_DIR)ProcessSTL.cpp $(SRC_DIR)ProcessSTL.hpp
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)ProcessSTL.o $(SRC_DIR)ProcessSTL.cpp
@@ -60,10 +64,6 @@ Plane.o: $(SRC_DIR)Plane.cpp $(SRC_DIR)Plane.hpp
 # Make the Polygon object file
 Polygon.o: $(SRC_DIR)Polygon.cpp $(SRC_DIR)Polygon.hpp
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)Polygon.o $(SRC_DIR)Polygon.cpp
-
-# Make the Slice object file
-Slice.o: $(SRC_DIR)Slice.cpp $(SRC_DIR)Slice.hpp
-	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)Slice.o $(SRC_DIR)Slice.cpp
 
 # Make the Slicer object file
 Slicer.o: $(SRC_DIR)Slicer.cpp $(SRC_DIR)Slicer.hpp

@@ -36,7 +36,7 @@ namespace mapmqp {
         void normalize(double magnitude = 1);
         
         bool equals(const Vector3D & v, double faultTolerance) const;
-        bool equals(const Vector3D & v) const { return equals(v, Vector3D::s_faultTolerance); }
+        bool equals(const Vector3D & v) const { return equals(v, s_faultTolerance); }
         
         //static member's getters/setters
         static double faultTolerance();

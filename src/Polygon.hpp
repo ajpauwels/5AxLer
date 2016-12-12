@@ -28,6 +28,7 @@ namespace mapmqp {
         
         Polygon mapToXYPlane() const;
         Vector3D mapPointToXYPlane(const Vector3D & point) const;
+        Vector3D mapPointToPolygonPlane(const Vector3D & point) const; //only looks at x and y values of point
         
         double area() const;
         
@@ -44,7 +45,7 @@ namespace mapmqp {
         Plane m_plane;
         Vector3D m_planeAxisX, m_planeAxisY; //create x and y axes relative to polygon plane
         
-        //TODO should these be variables of #defines?
+        //TODO should these be #defines instead of variables?
         static uint64_t s_mappedPointPrecision; //since clipper only uses integers as coordinates, coordinates are multiplied by mappedPointPrecision_ when stored in polygonXYPlane_ and divided back by mappedPointPrecision_ when returned (clipper integers range from +/- 4.6e18 ~= 2^62)
         
         ClipperLib::Path m_polygonXYPlane; //clipper representation of polygon

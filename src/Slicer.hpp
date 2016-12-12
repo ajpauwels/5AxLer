@@ -12,26 +12,39 @@
 
 #include <memory>
 
+#include "Vector3D.hpp"
 #include "Plane.hpp"
 #include "Mesh.hpp"
+#include "Island.hpp"
 
 namespace mapmqp {
 	// Class definition
 	class Slicer {
 	public:
+        class Slice {
+        public:
+            Slice(Plane plane, std::vector<std::shared_ptr<const Island>> p_islands) :
+            plane(plane), p_islands(p_islands) { }
+            
+            Plane plane;
+            std::vector<std::shared_ptr<const Island>> p_islands;
+
+            // Returns a Polygon object in the shape of the slice
+            std::vector<Polygon> toPoly();
+        };
         
         // Constructor
         Slicer(std::shared_ptr<const Mesh> p_mesh);
 
-	// Slice iterator
+	   // Slice iterator
         Slice slice(const Plane & plane) const;
 
 	private:
         //functions
         
         //slice plane with limited search space
-        //returns slice and vector of ptrs to MeshFace that contained slice
-        std::pair<Slice, std::vector<std::shared_ptr<const MeshFace>>> slice(const Plane & plane, const std::vector<std::shared_ptr<const MeshFace>> & p_facesSearchSpace) const;
+        //returns slice and vector of ptrs to Mesh::Face that contained slice
+        std::pair<Slice, std::vector<std::shared_ptr<const Mesh::Face>>> slice(const Plane & plane, const std::vector<std::shared_ptr<const Mesh::Face>> & p_facesSearchSpace) const;
         
         //variables
         

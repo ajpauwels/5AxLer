@@ -17,10 +17,8 @@ using namespace mapmqp;
 using namespace std;
 using namespace ClipperLib;
 
-BuildMap::BuildMap(Vector3D faceNormals[], double faceAreas[], int faceCount) :
-m_faceNormals(faceNormals),
-m_faceAreas(faceAreas),
-m_faceCount(faceCount) { }
+BuildMap::BuildMap(std::shared_ptr<Mesh> p_mesh) :
+m_p_mesh(p_mesh) { }
 
 bool BuildMap::solve() {
     if (!m_solved) {
@@ -31,23 +29,26 @@ bool BuildMap::solve() {
         
         if (!ellipseBuilt) {
             //use ceil() to over-estimate area
-            double deltaTheta = ceil(((M_PI - THETA_MAX) * B_AXIS_RANGE) / (2 * M_PI));
-            double deltaPhi = ceil(((M_PI - THETA_MAX) * A_AXIS_RANGE * 2) / (2 * M_PI));
+            double deltaTheta = thetaToBAxisRange(THETA_MAX);
+            double deltaPhi = phiToAAxisRange(THETA_MAX);
+            
+            //to overapproximate ellipse, we extend the radius by this constant
+            double radiusExtension = 1.0 / cos(M_PI / ELLIPSE_PRECISION);
             
             writeLog(INFO, "BUILD MAP - delta-theta: %f", deltaTheta);
             writeLog(INFO, "BUILD MAP - delta-phi: %f", deltaPhi);
             writeLog(INFO, "BUILD MAP - ellipse area: %f", M_PI * deltaTheta * deltaPhi);
+            writeLog(INFO, "BUILD MAP - radius extension: %f", radiusExtension);
             
             //polygon goes in clockwise form
             for (unsigned int i = 0; i < ELLIPSE_PRECISION; i++) {
                 double angle = 2.0 * M_PI * static_cast<double>(i) / static_cast<double>(ELLIPSE_PRECISION);
                 
-                //TODO this underapproximates ellipse, it should overapproximate to guarantee no false-negatives
-                double xDouble = deltaTheta * cos(angle);
-                double yDouble = deltaPhi * sin(angle);
+                double xDouble = deltaTheta * radiusExtension * cos(angle);
+                double yDouble = deltaPhi * radiusExtension * sin(angle);
                 
-                int xInt = (xDouble > 0) ? (ceil(xDouble) + 1) : (floor(xDouble) - 1);
-                int yInt = (yDouble > 0) ? (ceil(yDouble) + 1) : (floor(yDouble) - 1);
+                int xInt = (xDouble > 0) ? ceil(xDouble) : floor(xDouble);
+                int yInt = (yDouble > 0) ? ceil(yDouble) : floor(yDouble);
                 
                 ellipseCoors.push_back(pair<int, int>(xInt, yInt));
             }
@@ -59,26 +60,79 @@ bool BuildMap::solve() {
         
         //remove all contraints from face normals
         Paths holes;
-        for (unsigned int i = 0; i < m_faceCount; i++) {
-            Vector3D v = m_faceNormals[i];
+        for (vector<shared_ptr<Mesh::Face>>::const_iterator it = m_p_mesh->p_faces().begin(); it != m_p_mesh->p_faces().end(); it++) {
+            Vector3D v = (*it)->normal();
+            v = v * -1;
             
-            int xCenter = thetaToBAxisRange(v.theta());
-            int yCenter = phiToAAxisRange(v.phi());
-            
-            Path hole;
-            for (vector<pair<int, int>>::iterator it = ellipseCoors.begin(); it < ellipseCoors.end(); it++) {
-                hole << IntPoint(fmin(B_AXIS_RANGE, fmax(0, it->first + xCenter)), fmin(A_AXIS_RANGE, fmax(0, it->second + yCenter)));
+            if (v.phi().val() == 0) {
+                m_phiZeroAvailable = false;
+                
+                Path hole;
+                hole << IntPoint(0, 0) << IntPoint(0, phiToAAxisRange(THETA_MAX)) << IntPoint(B_AXIS_DISCRETE_POINTS, phiToAAxisRange(THETA_MAX)) << IntPoint(B_AXIS_DISCRETE_POINTS, 0);
+                
+                //union all holes into one polygon
+                Clipper holeClipper;
+                holeClipper.AddPaths(holes, ptSubject, true);
+                holeClipper.AddPath(hole, ptClip, true);
+                if (!holeClipper.Execute(ctUnion, holes, pftNonZero, pftNonZero)) {
+                    writeLog(ERROR, "BUILD MAP - error taking union of holes");
+                    return false;
+                }
+            } else {
+                //if top point of build map is covered, set phiZeroAvailable to false
+                m_phiZeroAvailable &= (fabs(v.phi().val()) > THETA_MAX);
+                
+                int xCenter = thetaToBAxisRange(v.theta());
+                int yCenter = phiToAAxisRange(v.phi());
+                
+                double sinPhi = v.phi().sinVal();
+                
+                Path hole,
+                holeWrapThetaPos,
+                holeWrapThetaNeg;
+                
+                bool wrapAroundThetaPos = false,
+                wrapAroundThetaNeg = false;
+                
+                for (vector<pair<int, int>>::iterator it = ellipseCoors.begin(); it < ellipseCoors.end(); it++) {
+                    int x = (it->first / sinPhi) + xCenter;
+                    int y = it->second + yCenter;
+                    hole << IntPoint(x, y);
+                    
+                    if (!wrapAroundThetaPos) {
+                        if (x > B_AXIS_DISCRETE_POINTS) {
+                            wrapAroundThetaPos = true;
+                        }
+                    }
+                    holeWrapThetaPos << IntPoint(x - B_AXIS_DISCRETE_POINTS, y);
+                    
+                    if (!wrapAroundThetaNeg) {
+                        if (x < 0) {
+                            wrapAroundThetaNeg = true;
+                        }
+                    }
+                    holeWrapThetaNeg << IntPoint(x + B_AXIS_DISCRETE_POINTS, y);
+                }
+                
+                //union all holes into one polygon
+                Clipper holeClipper;
+                holeClipper.AddPaths(holes, ptSubject, true);
+                
+                holeClipper.AddPath(hole, ptClip, true);
+                if (wrapAroundThetaPos) {
+                    holeClipper.AddPath(holeWrapThetaPos, ptClip, true);
+                }
+                if (wrapAroundThetaNeg) {
+                    holeClipper.AddPath(holeWrapThetaNeg, ptClip, true);
+                }
+                
+                if (!holeClipper.Execute(ctUnion, holes, pftNonZero, pftNonZero)) {
+                    writeLog(ERROR, "BUILD MAP - error taking union of holes");
+                    return false;
+                }
             }
             
-            //union all holes into one polygon
-            Clipper holeClipper;
-            holeClipper.AddPaths(holes, ptSubject, true);
-            holeClipper.AddPath(hole, ptClip, true);
-            if (!holeClipper.Execute(ctUnion, holes, pftNonZero, pftNonZero)) {
-                writeLog(ERROR, "BUILD MAP - error taking union of holes");
-                return false;
-            }
-            
+            //TODO will this be more efficient?
             //TODO check area of holes and if it's >= total build map area then we know the build map is empty and we can stop here
             
             //SimplifyPolygons(holes_); //I don't think this is necessary and takes extra time but not sure
@@ -87,7 +141,7 @@ bool BuildMap::solve() {
         Clipper buildMapClipper;
         //set up subject (only look in this box)
         Path subject;
-        subject << IntPoint(0, 0) << IntPoint(0, A_AXIS_RANGE) << IntPoint(B_AXIS_RANGE, A_AXIS_RANGE) << IntPoint(B_AXIS_RANGE, 0);
+        subject << IntPoint(0, 0) << IntPoint(0, A_AXIS_DISCRETE_POINTS) << IntPoint(B_AXIS_DISCRETE_POINTS, A_AXIS_DISCRETE_POINTS) << IntPoint(B_AXIS_DISCRETE_POINTS, 0);
         buildMapClipper.AddPath(subject, ptSubject, true);
         buildMapClipper.AddPaths(holes, ptClip, true);
         if (!buildMapClipper.Execute(ctDifference, m_buildMap2D, pftNonZero, pftNonZero)) {
@@ -104,10 +158,7 @@ double BuildMap::area() const {
     if (!m_solved) {
         writeLog(WARNING, "BUILD MAP - taking area of unsolved build map");
         return 0;
-    }
-    
-    //check to make sure paths are not empty (meaning empty area)
-    if (m_buildMap2D.size() == 0) {
+    } else if (m_buildMap2D.size() == 0) { //check to make sure paths are not empty (meaning empty area)
         return 0;
     }
     
@@ -122,10 +173,10 @@ bool BuildMap::checkVector(const Vector3D & v, bool includeEdges) const {
     if (!m_solved) {
         writeLog(WARNING, "BUILD MAP - checking vector of unsolved build map");
         return false;
-    }
-    
-    if (area() == 0) { //build map is empty
+    } else if (area() == 0) { //build map is empty
         return false;
+    } else if (v.phi().val() == 0) {
+        return m_phiZeroAvailable;
     }
     
     //will return 0 if false, -1 if on edge, 1 otherwise
@@ -133,7 +184,24 @@ bool BuildMap::checkVector(const Vector3D & v, bool includeEdges) const {
     return (includeEdges ? (pointIn != 0) : (pointIn == 1));
 }
 
-Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, int height) const {
+Vector3D BuildMap::findValidVector() const {
+    if (!m_solved) {
+        writeLog(WARNING, "BUILD MAP - finding valid vector of unsolved build map");
+        return Vector3D(0, 0, 0);
+    } else if (area() == 0) {
+        return Vector3D(0, 0, 0);
+    }
+    
+    //TODO can this just be done by grabbing a point from the outline of m_buildMap2D?
+    
+    Vector3D v = findValidVectorUtil(0, 0, B_AXIS_DISCRETE_POINTS, A_AXIS_DISCRETE_POINTS);
+    if (!checkVector(v)) {
+        writeLog(ERROR, "BUILD MAP - arbitrary vector(%f, %f, %f) not in buildmap", v.x(), v.y(), v.z());
+    }
+    return v;
+}
+
+Vector3D BuildMap::findValidVectorUtil(int xStart, int yStart, int width, int height) const {
 #ifdef DEBUG_MODE
     //writeLog(INFO, "BUILD MAP - checking build map theta(%d-%d) phi(%d-%d)", xStart, xStart + width, yStart, yStart + height);
 #endif
@@ -169,53 +237,7 @@ Vector3D BuildMap::findValidVectorRecursive(int xStart, int yStart, int width, i
         searchSuccess = false;
     }
     
-    return findValidVectorRecursive(xStart + width - dx, yStart + height - dy, dx, dy);
-}
-
-Vector3D BuildMap::findValidVector() const {
-    if (!m_solved) {
-        writeLog(WARNING, "BUILD MAP - finding valid vector of unsolved build map");
-        return Vector3D(0, 0, 0);
-    }
-    
-    if (area() == 0) {
-        return Vector3D(0, 0, 0);
-    }
-    
-    Vector3D v = findValidVectorRecursive(0, 0, B_AXIS_RANGE, A_AXIS_RANGE);
-    if (!checkVector(v)) {
-        writeLog(ERROR, "BUILD MAP - arbitrary vector(%f, %f, %f) not in buildmap", v.x(), v.y(), v.z());
-    }
-    return v;
-}
-
-Vector3D BuildMap::findBestVectorRecursive(int x, int y, int dx, int dy, double heuristic) const {
-    double north = weighVector(Vector3D(bAxisValToTheta((x + dx) % B_AXIS_RANGE), aAxisValToPhi(y)));
-    double south = weighVector(Vector3D(bAxisValToTheta((x - dx) % B_AXIS_RANGE), aAxisValToPhi(y)));
-    double east = weighVector(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y + dy) % A_AXIS_RANGE)));
-    double west = weighVector(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y - dy) % A_AXIS_RANGE)));
-    
-    double maxHeuristic = fmin(heuristic, fmin(north, fmin(south, fmin(east, west))));
-    
-    int newDx = ceil(static_cast<double>(dx) / 2.0);
-    int newDy = ceil(static_cast<double>(dy) / 2.0);
-    
-    if (maxHeuristic == heuristic) {
-        //if we have reach minimum and search has narrowed down fully
-        if ((dx == 1) && (dy == 1)) {
-            return Vector3D(bAxisValToTheta(x), aAxisValToPhi(y));
-        }
-        
-        return findBestVectorRecursive(x, y, newDx, newDy, heuristic);
-    } else if (maxHeuristic == north) {
-        return findBestVectorRecursive((x + newDx) % B_AXIS_RANGE, y, newDx, newDy, north);
-    } else if (maxHeuristic == south) {
-        return findBestVectorRecursive((x - newDx) % B_AXIS_RANGE, y, newDx, newDy, south);
-    } else if (maxHeuristic == east) {
-        return findBestVectorRecursive(x, (y + newDy) % A_AXIS_RANGE, newDx, newDy, east);
-    } else { //if (maxHeuristic == west)
-        return findBestVectorRecursive(x, (y + newDy) % A_AXIS_RANGE, newDx, newDy, west);
-    }
+    return findValidVectorUtil(xStart + width - dx, yStart + height - dy, dx, dy);
 }
 
 Vector3D BuildMap::findBestVector() const {
@@ -224,56 +246,104 @@ Vector3D BuildMap::findBestVector() const {
         return Vector3D(0, 0, 0);
     }
     
-    Vector3D v = findValidVector();
-    double heuristic = weighVector(v);
+    //TODO it may be possible build map is disjoint, in which find best vector on both disjoint areas
     
-    return findBestVectorRecursive(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi()), B_AXIS_RANGE / 2, A_AXIS_RANGE / 2, heuristic);
+    Vector3D v = findValidVector();
+    double heuristic = averageCuspHeight(v);
+    
+    return findBestVectorUtil(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi()), B_AXIS_DISCRETE_POINTS / 4, A_AXIS_DISCRETE_POINTS / 4, heuristic).first;
 }
 
-double BuildMap::weighVector(const Vector3D & v) const {
+pair<Vector3D, double> BuildMap::findBestVectorUtil(int x, int y, int dx, int dy, double prevHeuristic) const {
+    vector<pair<Vector3D, double>> options; //Vector3D with lowest heuristic in this vector is the best vector
+    
+    double north = averageCuspHeight(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y + dy) % A_AXIS_DISCRETE_POINTS)));
+    double south = averageCuspHeight(Vector3D(bAxisValToTheta(x), aAxisValToPhi((y - dy) % A_AXIS_DISCRETE_POINTS)));
+    double east = averageCuspHeight(Vector3D(bAxisValToTheta((x + dx) % B_AXIS_DISCRETE_POINTS), aAxisValToPhi(y)));
+    double west = averageCuspHeight(Vector3D(bAxisValToTheta((x - dx) % B_AXIS_DISCRETE_POINTS), aAxisValToPhi(y)));
+    
+    int newDx = ceil(static_cast<double>(dx) / 2.0);
+    int newDy = ceil(static_cast<double>(dy) / 2.0);
+    
+    if (prevHeuristic < fmin(north, fmin(south, fmin(east, west)))) { //there is no better option so continue narrowing down search
+        if ((dx == 1) && (dy == 1)) {
+            options.push_back(pair<Vector3D, double>(Vector3D(bAxisValToTheta(x), aAxisValToPhi(y)), prevHeuristic));
+        } else {
+            options.push_back(findBestVectorUtil(x, y, newDx, newDy, prevHeuristic));
+        }
+    } else {
+        if (north < prevHeuristic) {
+            options.push_back(findBestVectorUtil((x + newDx) % B_AXIS_DISCRETE_POINTS, y, newDx, newDy, north));
+        }
+        if (south < prevHeuristic) {
+            options.push_back(findBestVectorUtil((x - newDx) % B_AXIS_DISCRETE_POINTS, y, newDx, newDy, south));
+        }
+        if (east < prevHeuristic) {
+            options.push_back(findBestVectorUtil(x, (y + newDy) % A_AXIS_DISCRETE_POINTS, newDx, newDy, east));
+        }
+        if (west < prevHeuristic) {
+            options.push_back(findBestVectorUtil(x, (y + newDy) % A_AXIS_DISCRETE_POINTS, newDx, newDy, west));
+        }
+    }
+    
+    pair<Vector3D, double> bestOption(Vector3D(0, 0, 0), INFINITY);
+    for (vector<pair<Vector3D, double>>::iterator it = options.begin(); it != options.end(); it++) {
+        if (it->second < bestOption.second) {
+            bestOption = *it;
+        }
+    }
+    
+    if (bestOption.first == Vector3D(0, 0, 0)) {
+        writeLog(ERROR, "BUILD MAP - finding best vector returned no valid options");
+    }
+    
+    return bestOption;
+}
+
+double BuildMap::averageCuspHeight(const Vector3D & v) const {
     if (!m_solved) {
         writeLog(WARNING, "BUILD MAP - weighing vector of unsolved build map");
         return INFINITY;
-    }
-    
-    if (!checkVector(v)) {
+    } else if (!checkVector(v)) {
         return INFINITY;
     }
     
-    //uncomment lines of code to measure cusp height accurately instead of relatively
-    
     double weight = 0;
-    //double totalFaceArea;
-    for (unsigned int i = 0; i < m_faceCount; i++) {
-#ifdef DEBUG_MODE
-        if (Vector3D::dotProduct(v, m_faceNormals[i]) > cos(THETA_MAX)) {
-            writeLog(ERROR, "BUILD MAP - dotProduct(v, faceNormals[%d]) = %d > cos(THETA_MAX) = %d", i, Vector3D::dotProduct(v, m_faceNormals[i]), cos(THETA_MAX));
-        }
-#endif
-        weight += Vector3D::dotProduct(v, m_faceNormals[i]) * m_faceAreas[i];
-        //totalFaceArea += m_faceAreas[i];
+    double totalFaceArea;
+    for (vector<shared_ptr<Mesh::Face>>::const_iterator it = m_p_mesh->p_faces().begin(); it != m_p_mesh->p_faces().end(); it++) {
+        shared_ptr<Mesh::Face> p_face = *it;
+        
+        double weightToAdd = Vector3D::dotProduct(v, p_face->normal());
+        weightToAdd /= (v.magnitude() * p_face->normal().magnitude());
+        weight += fabs(weightToAdd) * p_face->area();
+        
+        totalFaceArea += p_face->area();
     }
-    //weight *= SLICE_THICKNESS;
-    //weight /= totalFaceArea;
+    weight *= SLICE_THICKNESS;
+    weight /= totalFaceArea;
     return weight;
 }
 
-int BuildMap::phiToAAxisRange(const Angle & phi) {
-    //phi ranges [0, 2*pi)
-    return (phi.val() * 2 * A_AXIS_RANGE) / (2.0 * M_PI);
+Vector3D BuildMap::mapToVector(int x, int y) {
+    return Vector3D(bAxisValToTheta(x), aAxisValToPhi(y));
+}
+
+std::pair<int, int> BuildMap::vector3DToMap(const Vector3D & v) {
+    return pair<int, int>(thetaToBAxisRange(v.theta()), phiToAAxisRange(v.phi()));
 }
 
 int BuildMap::thetaToBAxisRange(const Angle & theta) {
-    //theta ranges [0, 2*pi)
-    return (theta.val() * B_AXIS_RANGE) / (2.0 * M_PI);
+    return Angle::radiansToDegrees(theta.val()) / B_AXIS_PRECISION_DEGREES;
 }
 
-Angle BuildMap::aAxisValToPhi(double aAxisVal) {
-    //inverse of phiToAAxisRange(Angle phi)
-    return Angle((2.0 * M_PI * aAxisVal) / (2 * A_AXIS_RANGE));
+int BuildMap::phiToAAxisRange(const Angle & phi) {
+    return Angle::radiansToDegrees(phi.val()) / A_AXIS_PRECISION_DEGREES;
 }
 
 Angle BuildMap::bAxisValToTheta(double bAxisVal) {
-    //inverse of thetaToBAxisRange(Angle theta)
-    return Angle(((2.0 * M_PI * bAxisVal) / B_AXIS_RANGE));
+    return Angle(Angle::degreesToRadians(bAxisVal * B_AXIS_PRECISION_DEGREES));
+}
+
+Angle BuildMap::aAxisValToPhi(double aAxisVal) {
+    return Angle(Angle::degreesToRadians(aAxisVal * A_AXIS_PRECISION_DEGREES));
 }

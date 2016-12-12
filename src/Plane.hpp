@@ -33,7 +33,8 @@ namespace mapmqp {
         void normal(Vector3D normal);
         void origin(Vector3D origin);
         
-        PLANE_POSITION pointOnPlane(const Vector3D & point) const;
+        PLANE_POSITION pointOnPlane(const Vector3D & point, double faultTolerance) const;
+        PLANE_POSITION pointOnPlane(const Vector3D & point) const { return pointOnPlane(point, s_faultTolerance); }
         
         //static member's getters/setters
         static double faultTolerance();

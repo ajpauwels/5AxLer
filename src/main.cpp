@@ -6,7 +6,7 @@
 //  Copyright © 2016 MAP MQP. All rights reserved.
 //
 
-#define RUN_TESTS
+// #define RUN_TESTS
 
 #ifdef RUN_TESTS
 #define CATCH_CONFIG_MAIN
@@ -18,6 +18,7 @@
 #include <stdio.h>
 
 //for debugging
+//TODO remove these
 #include "../libs/clipper/clipper.hpp"
 #include "Mesh.hpp"
 #include "Utility.hpp"
@@ -27,25 +28,62 @@
 #include <cmath>
 #include <unordered_map>
 #include <string>
+#include <memory>
+#include <queue>
+#include "BuildMapToMATLAB.hpp"
 #include "Slicer.hpp"
+#include "DirectedGraph.hpp"
 //end debugging
 
 using namespace mapmqp;
+using namespace std;
 
 int main(int argc, const char * argv[]) {
     // insert code here...
     printf("Hello, World!\n");
     
-    // #ifdef RUN_TESTS
-    //     //run tests
-    //     //mapmqp::writeLog(mapmqp::INFO, "running tests...");
-    //     int catch_argc = argc;
-    //     char ** catch_argvs;
-    //     char * catch_a = new char[argc];
-    //     catch_argvs = &catch_a;
-    //     catch_main(catch_argc, catch_argvs);
-    //     //return 0;
-    // #endif
+#ifdef RUN_TESTS
+    //run tests
+    mapmqp::writeLog(mapmqp::INFO, "running tests...");
+    int catch_argc = argc;
+    char ** catch_argvs;
+    char * catch_a = new char[argc];
+    catch_argvs = &catch_a;
+    catch_main(catch_argc, catch_argvs);
+    //return 0;
+#endif
+    
+    DirectedGraph<int> graph;
+    
+    int n0 = graph.addVertex(0);
+    int n1 = graph.addVertex(1);
+    int n2 = graph.addVertex(2);
+    int n3 = graph.addVertex(3);
+    int n4 = graph.addVertex(4);
+    int n5 = graph.addVertex(5);
+    
+    graph.addDirectedEdge(5, 2);
+    graph.addDirectedEdge(5, 0);
+    graph.addDirectedEdge(4, 0);
+    graph.addDirectedEdge(4, 1);
+    graph.addDirectedEdge(2, 3);
+    graph.addDirectedEdge(3, 1);
+    
+    //    graph.addDirectedEdge(n2, n0);
+    //    graph.addDirectedEdge(n2, n1);
+    //    graph.addDirectedEdge(n0, n1);
+    //    graph.addDirectedEdge(n1, n3);
+    //    graph.addDirectedEdge(n1, n6);
+    //    graph.addDirectedEdge(n6, n7);
+    //    graph.addDirectedEdge(n4, n5);
+    
+    stack<int> q = graph.topologicalSort();
+    
+    while (!q.empty()) {
+        int i = q.top();
+        q.pop();
+        printf("%i\n", i);
+    }
     
     //     mapmqp::writeLog(mapmqp::INFO, "starting 5AxLer at time %s", mapmqp::Clock::wallTimeString().c_str());
     //     mapmqp::settingsDocument();
@@ -61,115 +99,57 @@ int main(int argc, const char * argv[]) {
     // writeLog(INFO, "v4 == v4 : %d", v4 == v5);
     
     /* testing ProcessSTL */
-    
-    mapmqp::ProcessSTL parser(argv[1]);
-    std::shared_ptr<mapmqp::Mesh> p_mesh = parser.run();
-    const std::vector<std::shared_ptr<mapmqp::MeshFace>> meshFaces = p_mesh->p_faces();
-    for (uint32_t i = 0; i < meshFaces.size(); ++i) {
-        const std::shared_ptr<mapmqp::MeshFace> currFace = meshFaces[i];
-        
-        printf("Face vertices are:\n");
-        for (uint16_t j = 0; j < 3; ++j) {
-            printf("\t[%f, %f, %f]", currFace->p_vertex(j)->vertex().x(), currFace->p_vertex(j)->vertex().y(), currFace->p_vertex(j)->vertex().z());
-        }
-        printf("\n");
-        printf("Connected faces are:\n");
-        for (uint16_t j = 0; j < 3; ++j) {
-            printf("%d.)", j);
-            const std::shared_ptr<const mapmqp::MeshFace> connFace = currFace->p_connectedFace(j);
-            for (uint16_t k = 0; k < 3; ++k) {
-                printf("\t[%f, %f, %f]", connFace->p_vertex(k)->vertex().x(), connFace->p_vertex(k)->vertex().y(), connFace->p_vertex(k)->vertex().z());
-            }
-            printf("\n");
-        }
-        printf("\n");
-        
+    if (argc < 2) {
+        writeLog(ERROR, "path to the STL file must be supplied");
+        return 0;
     }
     
-//    ClipperLib::Clipper clip;
-//    ClipperLib::Path poly;
-//    poly << ClipperLib::IntPoint(0, 0) << ClipperLib::IntPoint(0, 10) << ClipperLib::IntPoint(10, 10) << ClipperLib::IntPoint(10, 0);
-//    printf("area: %f\n", ClipperLib::Area(poly));
-//    printf("in poly: %s\n", ClipperLib::PointInPolygon(ClipperLib::IntPoint(5, 5), poly) ? "true" : "false");
+    std::shared_ptr<mapmqp::Mesh> p_mesh = ProcessSTL::constructMeshFromSTL(argv[1]);
+    const std::vector<std::shared_ptr<mapmqp::Mesh::Face>> meshFaces = p_mesh->p_faces();
+    // for (uint32_t i = 0; i < meshFaces.size(); ++i) {
+    //     const std::shared_ptr<mapmqp::Mesh::Face> currFace = meshFaces[i];
+        
+    //     printf("Face vertices are:\n");
+    //     for (uint16_t j = 0; j < 3; ++j) {
+    //         printf("\t[%f, %f, %f]", currFace->p_vertex(j)->vertex().x(), currFace->p_vertex(j)->vertex().y(), currFace->p_vertex(j)->vertex().z());
+    //     }
+    //     printf("\n");
+    //     printf("Connected faces are:\n");
+    //     for (uint16_t j = 0; j < 3; ++j) {
+    //         printf("%d.)", j);
+    //         const std::shared_ptr<const mapmqp::Mesh::Face> connFace = currFace->p_connectedFace(j);
+    //         for (uint16_t k = 0; k < 3; ++k) {
+    //             printf("\t[%f, %f, %f]", connFace->p_vertex(k)->vertex().x(), connFace->p_vertex(k)->vertex().y(), connFace->p_vertex(k)->vertex().z());
+    //         }
+    //         printf("\n");
+    //     }
+    //     printf("\n");
+        
+    // }
     
-    ClipperLib::Clipper clipper;
-    ClipperLib::Paths polys;
-    ClipperLib::Path p1;
-    ClipperLib::Path p2;
-    ClipperLib::Path p3;
-    ClipperLib::Path p4;
+    ProcessSTL::constructSTLfromMesh(*p_mesh, "debug/TestSTL.STL");
     
-    p1 << ClipperLib::IntPoint(10, 10) << ClipperLib::IntPoint(100, 10) << ClipperLib::IntPoint(100, 100) << ClipperLib::IntPoint(10, 100);
-    p2 << ClipperLib::IntPoint(20, 20) << ClipperLib::IntPoint(20, 90) << ClipperLib::IntPoint(90, 90) << ClipperLib::IntPoint(90, 20);
-    p3 << ClipperLib::IntPoint(30, 30) << ClipperLib::IntPoint(50, 30) << ClipperLib::IntPoint(50, 50) << ClipperLib::IntPoint(30, 50);
-    p4 << ClipperLib::IntPoint(60, 60) << ClipperLib::IntPoint(80, 60) << ClipperLib::IntPoint(80, 80) << ClipperLib::IntPoint(60, 80);
+    mapmqp::BuildMap map(p_mesh);
+    map.solve();
+    BuildMapToMATLAB::parse("debug/buildmap-plane.m", map, BuildMapToMATLAB::PLANE, 25);
+    BuildMapToMATLAB::parse("debug/buildmap-sphere.m", map, BuildMapToMATLAB::SPHERE, 25);
+    BuildMapToMATLAB::parse("debug/buildmap-sphere-smooth.m", map, BuildMapToMATLAB::SPHERE_SMOOTH, 25);
     
-    clipper.AddPath(p4, ClipperLib::ptSubject, true);
-    clipper.AddPath(p1, ClipperLib::ptSubject, true);
-    clipper.AddPath(p3, ClipperLib::ptSubject, true);
-    clipper.AddPath(p2, ClipperLib::ptSubject, true);
+    map.checkVector(mapmqp::Vector3D(mapmqp::Angle(0), mapmqp::Angle(0)));
     
-    ClipperLib::PolyTree solution;
+    double originalArea = A_AXIS_DISCRETE_POINTS * B_AXIS_DISCRETE_POINTS;
+    printf("original area: %f\n", originalArea);
     
-    clipper.Execute(ClipperLib::ctUnion, solution);
-    solution.Total();
+    double area = map.area();
+    printf("area: %f\n", area);
+    printf("area difference: %f\n", originalArea - area);
     
-    Slice slice = Slicer(p_mesh).slice(Plane(Vector3D(0, 0, 1), 100));
-    slice.p_islands();
+    mapmqp::Vector3D validVector = map.findValidVector();
+    printf("valid vector(theta:%f, phi:%f)\n", validVector.theta().val(), validVector.phi().val());
     
-    /*
-     //testing build map
-     srand(16);
-     mapmqp::Clock timer;
-     
-     #define THETA_POLE M_PI
-     #define PHI_POLE (M_PI / 2)
-     #define VECTOR_DIVERGENCE M_PI_2
-     #define MAX_AREA 40.0
-     
-     #define n 200000
-     
-     mapmqp::Vector3D faceNormals[n];
-     double faceAreas[n];
-     
-     for (int i = 0; i < n; i++) {
-     if (i % 1000 == 0) {
-     printf("i: %d\n", i);
-     }
-     
-     //randomly divert from pole with range of (-divergence, divergence) radians in either direction
-     mapmqp::Angle theta(THETA_POLE + ((((rand() % 2) == 0) ? 1 : -1) * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/VECTOR_DIVERGENCE))));
-     mapmqp::Angle phi(PHI_POLE + ((((rand() % 2) == 0) ? 1 : -1) * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/VECTOR_DIVERGENCE))));
-     
-     faceNormals[i] = mapmqp::Vector3D(theta, phi);
-     
-     faceAreas[i] = static_cast <float> (rand()) / static_cast <float> (RAND_MAX/MAX_AREA);
-     
-     //map.addConstraintVector(mapmqp::Vector3D(theta, phi));
-     }
-     printf("random surface data generated: %ldms\n", timer.delta());
-     
-     mapmqp::BuildMap map(faceNormals, faceAreas, n);
-     map.solve();
-     
-     printf("build map constructed: %ldms\n", timer.delta());
-     
-     map.checkVector(mapmqp::Vector3D(mapmqp::Angle(0), mapmqp::Angle(0)));
-     
-     double originalArea = A_AXIS_RANGE * B_AXIS_RANGE;
-     printf("original area: %f\n", originalArea);
-     
-     double area = map.area();
-     printf("area: %f\n", area);
-     printf("area difference: %f\n", area - originalArea);
-     
-     mapmqp::Vector3D validVector = map.findValidVector();
-     printf("valid vector(theta:%f, phi:%f)\n", validVector.theta().val(), validVector.phi().val());
-     
-     //TODO check to make sure this value is correct
-     mapmqp::Vector3D bestVector = map.findBestVector();
-     printf("best vector(theta:%f, phi:%f)\n", bestVector.theta().val(), bestVector.phi().val());
-     */
+    //TODO check to make sure this value is correct
+    mapmqp::Vector3D bestVector = map.findBestVector();
+    printf("best vector(theta:%f, phi:%f)\n", bestVector.theta().val(), bestVector.phi().val());
     
     return 0;
 }

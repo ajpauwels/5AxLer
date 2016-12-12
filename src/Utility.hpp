@@ -17,15 +17,21 @@
 
 //hardware variables
 
-#define THETA_MAX 2.35619449019 //in radians (should be between 0-pi)
+#define THETA_MAX 0.785398163397448309616 //in radians (should be between 0-pi)
 
-#define A_AXIS_RANGE 1800
-#define B_AXIS_RANGE 3600
+#define A_AXIS_RANGE_DEGREES 90.0
+#define A_AXIS_PRECISION_DEGREES 0.1
+#define A_AXIS_DISCRETE_POINTS (int)(A_AXIS_RANGE_DEGREES / A_AXIS_PRECISION_DEGREES)
+
+#define B_AXIS_PRECISION_DEGREES 0.1
+#define B_AXIS_RANGE_DEGREES 360.0
+#define B_AXIS_DISCRETE_POINTS (int)(B_AXIS_RANGE_DEGREES / B_AXIS_PRECISION_DEGREES)
 
 #define SLICE_THICKNESS 1
 
 //end hardware variables
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <iostream>
@@ -36,8 +42,6 @@
 #include <string>
 
 #include <sys/stat.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 #include "../libs/rapidjson/document.h"
 
@@ -72,11 +76,12 @@ namespace mapmqp {
             mkdir("./logs", 0777);
             
             //open all log files
-            std::string logFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp.log";
+            std::string timeStr = Clock::wallTimeString("-", "_", "-");
+            std::string logFilePath = "./logs/" + timeStr + "_mapmqp.log";
 #ifdef PRINT_SEPERATE_LOGS
-            std::string logInfoFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-info.log";
-            std::string logWarningsFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-warnings.log";
-            std::string logErrorsFilePath = "./logs/" + Clock::wallTimeString("-", "_", "-") + "_mapmqp-errors.log";
+            std::string logInfoFilePath = "./logs/" + timeStr + "_mapmqp-info.log";
+            std::string logWarningsFilePath = "./logs/" + timeStr + "_mapmqp-warnings.log";
+            std::string logErrorsFilePath = "./logs/" + timeStr + "_mapmqp-errors.log";
 #endif
             
             logFile = fopen(logFilePath.c_str(), "w+");
