@@ -22,6 +22,8 @@ namespace mapmqp {
 		std::vector<std::shared_ptr<Mesh>> run(std::shared_ptr<Mesh> p_mesh, Plane orientation);
 
 	private:
+		// Finds the point of intersection between the face and the intersecting poly
+		Vector3D findPolyFaceIntersection(face, intersectingPoly)
 	};
 }
 

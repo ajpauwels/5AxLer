@@ -17,7 +17,7 @@ namespace mapmqp {
     class Vector3D {
     public:
         Vector3D(double x = 0, double y = 0, double z = 0, bool unitVector = false);
-        Vector3D(Angle theta, Angle phi, double magntiude = 1);
+        Vector3D(Angle theta, Angle phi, double magnitude = 1);
         
         //getters
         double x() const;

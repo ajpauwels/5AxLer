@@ -128,6 +128,10 @@ int main(int argc, const char * argv[]) {
     //     printf("\n");
         
     // }
+
+    // THIS SECTION FOR TESTING VOLUME DECOMPOSITION
+    VolumeDecomposer decomposer = VolumeDecomposer(p_mesh, Plane());
+    // END TESTING VOLUME DECOMPOSITION
     
     ProcessSTL::constructSTLfromMesh(*p_mesh, "debug/TestSTL.STL");
     

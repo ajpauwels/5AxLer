@@ -71,21 +71,23 @@ vector<shared_ptr<Mesh>> run(shared_ptr<Mesh> p_mesh, Plane orientation) {
 				if (!parallel) {
 					// TODO: Write function that takes the comparison poly and the mesh face
 					// and returns the <x, y, z> intersecting point
-					Vector3D intersection = findPolyFaceIntersection(comparisonPoly, mf);
+					Vector3D intersection = findPolyFaceIntersection(mf, comparisonPoly);
 
 					// TODO: Write a function that takes a point on the face and a split direction
 					// and splits the face along that direction, creating three new faces
-					newFaces = splitFaceAlongDirection(mf, intersection, plane.normal());
+					// newFaces = splitFaceAlongDirection(mf, intersection, plane.normal());
 				}
 				// However if they are parallel, we must cut the triangle with the slice
 				else {
 					// TODO: Write a function that takes the face and the comparison polygon,
 					// intersects them, 
-					newFaces = splitFaceAlongSlice(mf, comparisonPoly);
+					// newFaces = splitFaceAlongSlice(mf, comparisonPoly);
 				}
 			}
 		}
 	}
+
+	return null;
 }
 
 /**
@@ -108,3 +110,33 @@ vector<shared_ptr<Mesh>> run(shared_ptr<Mesh> p_mesh, Plane orientation) {
  * 5. Otherwise, the line does not intersect and we move on to the next line
  * 6. If no intersections are found, an exception is thrown
  */
+Vector3D findPolyFaceIntersection(face, intersectingPoly) {
+	const Vector3D faceVert = face.p_vertex(0).vertex();
+	const Vector3D faceNorm = face.normal();
+	const std::vector<Vector3D> polyPoints = intersectingPoly.points();
+
+	double d = (faceNorm.x() * faceVert.x()) + (faceNorm.y() * faceVert.y()) + (faceNorm.z() * faceVert.z());
+
+	for (int i = 0; i < 3; ++i) {
+		Vector3D p1 = polyPoints[i];
+		Vector3D p2 = (i == 2) ? polyPoints[0] : polyPoints[i + 1];
+
+		double dX = p2.x() - p1.x();
+		double dY = p2.y() - p1.y();
+		double dZ = p2.z() - p1.z();
+
+		double t = (d - p1.x() - p1.y() - p1.z()) / (dX + dY + dZ);
+
+		if (t >= 0 && t <= 1) {
+			double newX = p1.x() + dX * t;
+			double newY = p1.y() + dY * t;
+			double newZ = p1.z() + dZ * t;
+			Vector3D intersectPoint = Vector3D(newX, newY, newZ);
+
+			return intersectPoint;
+		}
+	}
+
+	writeLog(ERROR, "when trying to find the intersection between a face and a polygon, no intersection was found");
+	exit(0);
+}
