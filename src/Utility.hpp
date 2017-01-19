@@ -53,8 +53,8 @@ namespace mapmqp {
         WARNING,
         ERROR
     };
-    
-    inline bool doubleEquals(double d1, double d2, double tolerance = 0) {
+
+    inline bool doubleEquals(const double & d1, const double & d2, const double & tolerance = 1e-5) {
         return (fabs(d1 - d2) <= tolerance);
     }
     

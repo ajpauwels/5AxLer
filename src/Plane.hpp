@@ -44,6 +44,7 @@ namespace mapmqp {
         
     private:
         Vector3D m_normal, m_origin;
+        double m_scalar;
         static double s_faultTolerance; //used for fault tolerance when determining if a point is on polygon plane
     };
 }

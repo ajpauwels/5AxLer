@@ -52,7 +52,7 @@ namespace mapmqp {
                 rosters[id.second] |= id.first;
             }
             
-            bool remove(const Identifier<T> & element) {
+            void remove(const Identifier<T> & element) {
                 ID id = element.id();
                 if ((rosters.size() <= id.second) || !(rosters[id.second] & id.first)) {
                     writeLog(WARNING, "removing element to Roster that does not contain element");

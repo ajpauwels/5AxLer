@@ -24,6 +24,7 @@ m_points(points) {
     if (points.size() < 3) {
         writeLog(ERROR, "attempted to create Polygon with only 2 points");
         //TODO throw exception
+        exit(0);
     }
     
     Vector3D p0, p1, p2;
@@ -36,6 +37,7 @@ m_points(points) {
             p1 = *it;
             for (vector<Vector3D>::const_iterator subIt = it + 1; subIt != points.end(); subIt++) {
                 if (Vector3D::crossProduct(p1 - p0, *subIt - p0) != 0) { //find point on different line than p0 and p1
+                    p2 = *subIt;
                     planeValid = true;
                     break;
                 }
@@ -46,6 +48,7 @@ m_points(points) {
     if (!planeValid) {
         writeLog(ERROR, "all points in Polygon lie on the same line");
         //TODO throw exception
+        exit(0);
     }
     
     //set plane's normal
@@ -58,18 +61,18 @@ m_points(points) {
     m_plane = Plane(planeNormal, t);
     
     //find x and y axes of polygon plane such that dot(x, planeNormal) = dot(y, planeNormal) = 0
-    m_planeAxisX = Vector3D(planeNormal.phi() + M_PI_2, planeNormal.theta());
-    m_planeAxisY = Vector3D(planeNormal.phi() + M_PI_2, planeNormal.theta() + M_PI_2);
+    m_planeAxisX = Vector3D(planeNormal.theta(), planeNormal.phi() + M_PI_2);
+    m_planeAxisY = Vector3D(planeNormal.theta() + M_PI_2, planeNormal.phi() + M_PI_2);
     m_planeAxisX.normalize();
     m_planeAxisY.normalize();
     
-    if (!doubleEquals(Vector3D::dotProduct(planeNormal, m_planeAxisX), 0)) {
+    if (!doubleEquals(Vector3D::dotProduct(planeNormal, m_planeAxisX), 0.0)) {
         writeLog(ERROR, "dot product between plane normal of Polygon and chosen x-axis = %f does not equal 0", fabs(Vector3D::dotProduct(planeNormal, m_planeAxisX)));
     }
-    if (!doubleEquals(Vector3D::dotProduct(planeNormal, m_planeAxisY), 0)) {
+    if (!doubleEquals(Vector3D::dotProduct(planeNormal, m_planeAxisY), 0.0)) {
         writeLog(ERROR, "dot product between plane normal of Polygon and chosen y-axis = %f does not equal 0", fabs(Vector3D::dotProduct(planeNormal, m_planeAxisY)));
     }
-    if (!doubleEquals(Vector3D::dotProduct(m_planeAxisX, m_planeAxisY), 0)) {
+    if (!doubleEquals(Vector3D::dotProduct(m_planeAxisX, m_planeAxisY), 0.0)) {
         writeLog(ERROR, "dot product between chosen x-axis and y-axis of Polygon plane = %f does not equal 0", fabs(Vector3D::dotProduct(m_planeAxisX, m_planeAxisY)));
     }
     
@@ -90,6 +93,10 @@ const vector<Vector3D> & Polygon::points() const {
 
 const Plane & Polygon::plane() const {
     return m_plane;
+}
+
+void Polygon::togglePolygonType() {
+    ClipperLib::ReversePath(m_polygonXYPlane);
 }
 
 Polygon Polygon::mapToXYPlane() const {

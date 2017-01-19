@@ -33,6 +33,9 @@ namespace mapmqp {
         double area() const;
         
         bool pointInPolygon(const Vector3D & point) const;
+
+        // Flips the polygon to be a hole if it's not, and vice-versa
+        void togglePolygonType();
         
         //static member's getters/setters
         static uint64_t mappedPointPrecision();

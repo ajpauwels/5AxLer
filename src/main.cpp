@@ -33,6 +33,7 @@
 #include "BuildMapToMATLAB.hpp"
 #include "Slicer.hpp"
 #include "DirectedGraph.hpp"
+// #include "VolumeDecomposer.hpp"
 //end debugging
 
 using namespace mapmqp;
@@ -130,32 +131,65 @@ int main(int argc, const char * argv[]) {
     // }
 
     // THIS SECTION FOR TESTING VOLUME DECOMPOSITION
-    VolumeDecomposer decomposer = VolumeDecomposer(p_mesh, Plane());
+    // VolumeDecomposer decomposer = VolumeDecomposer(p_mesh, Plane());
     // END TESTING VOLUME DECOMPOSITION
+
+    // THIS SECTION FOR TESTING SLICING
+    Slicer slicer = Slicer(p_mesh);
+    Plane originPlane = Plane();
+    Slicer::Slice slice = slicer.slice(originPlane);
+
+    int sliceCount = 0;
+    do {
+        sliceCount++;
+        vector<shared_ptr<const Island>> islands = slice.islands();
+        vector<Polygon> islandPolys;
+
+        for (int i = 0; i < islands.size(); ++i) {
+            islands[i]->toPoly(islandPolys);
+        }
+
+        for (int i = 0; i < islandPolys.size(); ++i) {
+            vector<Vector3D> points = islandPolys[i].points();
+
+            writeLog(INFO, "Slice #: %d", sliceCount);
+            for (int j = 0; j < points.size(); ++j) {
+                writeLog(INFO, "\t%s", points[j].toString().c_str());
+            }
+        }
+
+        slice = slicer.nextSlice();
+        writeLog(INFO, "Number of islands: %d", slice.islands().size());
+    } while (slice.islands().size() > 0);
+
+    // for (shared_ptr<const Mesh::Face> p_faceSlicer : firstSlice.faces()) {
+    //     writeLog(INFO, "%s", p_faceSlicer->toString());
+    // }
+    // END TESTING SLICING
     
-    ProcessSTL::constructSTLfromMesh(*p_mesh, "debug/TestSTL.STL");
+    // ProcessSTL::constructSTLfromMesh(*p_mesh, "debug/TestSTL.STL");
     
-    mapmqp::BuildMap map(p_mesh);
-    map.solve();
-    BuildMapToMATLAB::parse("debug/buildmap-plane.m", map, BuildMapToMATLAB::PLANE, 25);
-    BuildMapToMATLAB::parse("debug/buildmap-sphere.m", map, BuildMapToMATLAB::SPHERE, 25);
-    BuildMapToMATLAB::parse("debug/buildmap-sphere-smooth.m", map, BuildMapToMATLAB::SPHERE_SMOOTH, 25);
+    // mapmqp::BuildMap map(p_mesh);
+    // map.solve();
+    // BuildMapToMATLAB::parse("debug/buildmap-plane.m", map, BuildMapToMATLAB::PLANE, 25);
+    // BuildMapToMATLAB::parse("debug/buildmap-sphere.m", map, BuildMapToMATLAB::SPHERE, 25);
+    // BuildMapToMATLAB::parse("debug/buildmap-sphere-smooth.m", map, BuildMapToMATLAB::SPHERE_SMOOTH, 25);
     
-    map.checkVector(mapmqp::Vector3D(mapmqp::Angle(0), mapmqp::Angle(0)));
+    // map.checkVector(mapmqp::Vector3D(mapmqp::Angle(0), mapmqp::Angle(0)));
     
-    double originalArea = A_AXIS_DISCRETE_POINTS * B_AXIS_DISCRETE_POINTS;
-    printf("original area: %f\n", originalArea);
+    // double originalArea = A_AXIS_DISCRETE_POINTS * B_AXIS_DISCRETE_POINTS;
+    // printf("original area: %f\n", originalArea);
     
-    double area = map.area();
-    printf("area: %f\n", area);
-    printf("area difference: %f\n", originalArea - area);
+    // double area = map.area();
+    // printf("area: %f\n", area);
+    // printf("area difference: %f\n", originalArea - area);
     
-    mapmqp::Vector3D validVector = map.findValidVector();
-    printf("valid vector(theta:%f, phi:%f)\n", validVector.theta().val(), validVector.phi().val());
+    // mapmqp::Vector3D validVector = map.findValidVector();
+    // printf("valid vector(theta:%f, phi:%f)\n", validVector.theta().val(), validVector.phi().val());
     
-    //TODO check to make sure this value is correct
-    mapmqp::Vector3D bestVector = map.findBestVector();
-    printf("best vector(theta:%f, phi:%f)\n", bestVector.theta().val(), bestVector.phi().val());
+    // //TODO check to make sure this value is correct
+    // mapmqp::Vector3D bestVector = map.findBestVector();
+    // printf("best vector(theta:%f, phi:%f)\n", bestVector.theta().val(), bestVector.phi().val());
     
     return 0;
 }

@@ -367,7 +367,7 @@ pair<Vector3D, Vector3D> Mesh::Face::planeIntersection(const Plane & plane) cons
             } else { //vertexPos[2] cannot be on plane
                 return pair<Vector3D, Vector3D>(m_p_vertices[1]->vertex(), m_p_vertices[0]->vertex());
             }
-        } else if (vertexPos[2] == Plane::ABOVE) {
+        } else if (vertexPos[2] == Plane::ON) {
             if (vertexPos[1] == Plane::ABOVE) {
                 return pair<Vector3D, Vector3D>(m_p_vertices[2]->vertex(), m_p_vertices[0]->vertex());
             } else {
@@ -388,7 +388,7 @@ pair<Vector3D, Vector3D> Mesh::Face::planeIntersection(const Plane & plane) cons
             return pair<Vector3D, Vector3D>(m_p_vertices[1]->vertex(), m_p_vertices[1]->vertex());
         }
     } else if (vertexPos[2] == Plane::ON) {
-        return pair<Vector3D, Vector3D>(m_p_vertices[2]->vertex(), m_p_vertices[1]->vertex());
+        return pair<Vector3D, Vector3D>(m_p_vertices[2]->vertex(), m_p_vertices[2]->vertex());
     }
     
     //no vertices lie on plane

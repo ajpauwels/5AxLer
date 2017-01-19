@@ -22,12 +22,13 @@ namespace mapmqp {
         
         // Getters
         const Polygon & polygon() const;
-        const std::vector<std::shared_ptr<const Mesh::Face>> & p_mainPolygonMeshFaces() const;
+        const std::vector<std::shared_ptr<const Mesh::Face>> & mainPolygonMeshFaces() const;
+        std::vector<std::shared_ptr<const Mesh::Face>> allFaces() const;
         const std::vector<std::shared_ptr<Island>> & children() const;
         
         void addChild(std::shared_ptr<Island> p_child);
 
-        void toPoly(std::vector<Polygon> & allPolys);
+        void toPoly(std::vector<Polygon> & allPolys) const;
 
         std::shared_ptr<const Island> m_p_parentIsland;
         

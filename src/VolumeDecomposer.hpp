@@ -10,6 +10,7 @@
 #define VolumeDecomposer_hpp
 
 #include "Mesh.hpp"
+#include "Polygon.hpp"
 
 namespace mapmqp {
 	// Class definition
@@ -23,7 +24,7 @@ namespace mapmqp {
 
 	private:
 		// Finds the point of intersection between the face and the intersecting poly
-		Vector3D findPolyFaceIntersection(face, intersectingPoly)
+		Vector3D findPolyFaceIntersection(std::shared_ptr<const Mesh::Face> face, Polygon intersectingPoly);
 	};
 }
 

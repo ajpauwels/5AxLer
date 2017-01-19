@@ -22,8 +22,28 @@ const Polygon & Island::polygon() const {
     return m_polygon;
 }
 
-const vector<shared_ptr<const Mesh::Face>> & Island::p_mainPolygonMeshFaces() const {
+const vector<shared_ptr<const Mesh::Face>> & Island::mainPolygonMeshFaces() const {
     return m_p_mainPolygonMeshFaces;
+}
+
+vector<shared_ptr<const Mesh::Face>> Island::allFaces() const {
+	vector<shared_ptr<const Mesh::Face>> faces;
+
+	// Copy in the top level faces of the island
+	for (shared_ptr<const Mesh::Face> p_face : m_p_mainPolygonMeshFaces) {
+		faces.push_back(p_face);
+	}
+
+	// Get the child faces
+	for (shared_ptr<Island> child : m_children) {
+		vector<shared_ptr<const Mesh::Face>> childFaces = child->allFaces();
+
+		for (shared_ptr<const Mesh::Face> p_childFace : childFaces) {
+			faces.push_back(p_childFace);
+		}
+	}
+
+	return faces;
 }
 
 const vector<shared_ptr<Island>> & Island::children() const {
@@ -40,10 +60,10 @@ void Island::addChild(shared_ptr<Island> p_child) {
  *
  * @param allPolys A vector to store the polygons in
  */
-void Island::toPoly(std::vector<Polygon> & allPolys) {
+void Island::toPoly(vector<Polygon> & allPolys) const {
 	allPolys.push_back(m_polygon);
 	
-	for (std::shared_ptr<Island> child : m_children) {
-		child.toPoly(allPolys);
+	for (shared_ptr<Island> child : m_children) {
+		child->toPoly(allPolys);
 	}
 }

@@ -18,7 +18,7 @@ using namespace std;
 double Plane::s_faultTolerance = 0.0;
 
 Plane::Plane(const Vector3D & normal, double scalar) :
-m_normal(normal) {
+m_normal(normal), m_scalar(scalar) {
     m_origin = normal;
     m_origin.normalize(scalar);
 }
@@ -29,6 +29,10 @@ const Vector3D & Plane::normal() const {
 
 const Vector3D & Plane::origin() const {
     return m_origin;
+}
+
+const double Plane::scalar() const {
+    return m_scalar;
 }
 
 void Plane::normal(Vector3D normal) {

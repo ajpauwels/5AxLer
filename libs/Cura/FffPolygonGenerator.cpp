@@ -101,6 +101,24 @@ bool FffPolygonGenerator::sliceModel(MeshGroup* meshgroup, TimeKeeper& timeKeepe
         Progress::messageProgress(Progress::Stage::SLICING, mesh_idx + 1, meshgroup->meshes.size());
     }
 
+    // CUSTOM CODE
+    for (unsigned int mesh_idx = 0; mesh_idx < slicerList.size(); ++mesh_idx) {
+        Slicer* meshSlicer slicerList[i];
+        std::vector<SlicerLayer> layers = meshSlicer.layers;
+
+        for (unsigned int layer_idx = 0; layer_idx < layers.size(); ++layer_idx) {
+            SlicerLayer layer = layers[layer_idx];
+            std::vector<SlicerSegment> segments = layer.segments;
+
+            for (unsigned int segment_idx = 0; segment_idx < segments.size(); ++segment_idx) {
+                SlicerSegment segment = segments[segment_idx];
+
+                log("[CUSTOM] start: %s, end: %s", segment.start.toString().c_str(), segment.end.toString().c_str());
+            }
+        }
+    }
+    // END CUSTOM CODE
+
     meshgroup->clear();///Clear the mesh face and vertex data, it is no longer needed after this point, and it saves a lot of memory.
 
 

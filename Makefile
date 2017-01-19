@@ -66,7 +66,7 @@ Polygon.o: $(SRC_DIR)Polygon.cpp $(SRC_DIR)Polygon.hpp
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)Polygon.o $(SRC_DIR)Polygon.cpp
 
 # Make the Slicer object file
-Slicer.o: $(SRC_DIR)Slicer.cpp $(SRC_DIR)Slicer.hpp
+Slicer.o: $(SRC_DIR)Slicer.cpp $(SRC_DIR)Slicer.hpp $(SRC_DIR)Utility.hpp $(SRC_DIR)Vector3D.hpp $(SRC_DIR)Plane.hpp $(SRC_DIR)Mesh.hpp $(SRC_DIR)Island.hpp
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)Slicer.o $(SRC_DIR)Slicer.cpp
 
 # Make the clipper object file

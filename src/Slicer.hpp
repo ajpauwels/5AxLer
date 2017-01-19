@@ -24,20 +24,27 @@ namespace mapmqp {
         class Slice {
         public:
             Slice(Plane plane, std::vector<std::shared_ptr<const Island>> p_islands) :
-            plane(plane), p_islands(p_islands) { }
-            
-            Plane plane;
-            std::vector<std::shared_ptr<const Island>> p_islands;
+            m_plane(plane), m_p_islands(p_islands) { }
 
+            std::vector<std::shared_ptr<const Island>> & islands();
+            Plane plane() const;
+            std::vector<std::shared_ptr<const Mesh::Face>> faces() const;
+            
             // Returns a Polygon object in the shape of the slice
             std::vector<Polygon> toPoly();
+        private:
+            Plane m_plane;
+            std::vector<std::shared_ptr<const Island>> m_p_islands;
         };
         
         // Constructor
         Slicer(std::shared_ptr<const Mesh> p_mesh);
 
-        // Slice iterator
-        Slice slice(const Plane & plane) const;
+        // Use to begin the slicing process and get the first slice in a particular orientation
+        Slice slice(const Plane & plane);
+
+        // Once the first slice is retrieved, use this function to iterate through the object
+        Slice nextSlice();
         
     private:
         //functions
@@ -50,8 +57,11 @@ namespace mapmqp {
         std::vector<std::shared_ptr<const Mesh::Face>> expandSearchSpace(std::vector<std::shared_ptr<const Mesh::Face>> & p_facesSearchSpace, const Plane & originalPlane, const Plane & nextPlan) const;
         
         //variables
-        
         std::shared_ptr<const Mesh> m_p_mesh;
+        Plane m_originalSlicingPlane;
+        Plane m_currentSlicingPlane;
+        std::vector<std::shared_ptr<const Mesh::Face>> m_searchSpace;
+
     };
 }
 

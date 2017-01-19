@@ -52,7 +52,8 @@ shared_ptr<Mesh> ProcessSTL::constructMeshFromSTL(string stlFilePath) {
             
             for (unsigned int j = 0; j < 12; ++j) {		// Get all points from file
                 file.read((char*)(points + j), 4);
-                points[j] = floor((points[j] * 1000) + 0.5);
+                points[j] = floor((points[j] * 1000) + 0.5);    // TODO: why are we adding 0.5 again?
+                                                                // I remember now! It's an easy way to round up for >= 0.5, and down at < 0.5
             }
             file.read((char*)&abc, 2);
             

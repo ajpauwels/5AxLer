@@ -121,9 +121,10 @@ namespace mapmqp {
             // Add a connecting face to this face
             void connect(std::shared_ptr<Face> p_face, uint16_t edgeIndex);
             
-            // Get the edge index of the two given vertices
+            // Get the edge index of the given edge
             int16_t getEdgeIndex(std::shared_ptr<Edge> p_edge);
-            
+
+            // Writes a nice string representation of the face's three vertices
             std::string toString() const;
             
             // Operator overloads
